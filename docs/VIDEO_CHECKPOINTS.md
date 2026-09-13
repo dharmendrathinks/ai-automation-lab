@@ -2,7 +2,7 @@
 
 Engineering/content handoff for [AI Automation Lab](../PLAN.md). Follow the [repository workflow and evidence rules](REPOSITORY_WORKFLOW.md).
 
-**No confirmed video checkpoints yet.** The project is in planning; no implementation experiment or live evaluation has been performed for these checkpoints, and no milestone or video tags have been created.
+**No confirmed video checkpoints yet.** The Codex feasibility assessment is frozen; no live evaluation or qualifying video experiment has been completed. No video start/end tags have been created.
 
 Prospective questions and qualification criteria are listed in the workflow guide. Add entries here only when a genuine experiment is being built. A completed engineering milestone does not automatically warrant a video.
 
