@@ -1,0 +1,21 @@
+{
+  "id": "relaydesk-baseline-v1",
+  "clock": "2026-09-13T00:00:00.000Z",
+  "customers": [
+    { "id": "CUSTOMER-001", "name": "Morgan Example", "email": "customer-001@example.test", "accountPlan": "free", "accountStatus": "active", "createdAt": "2026-08-01T00:00:00.000Z" },
+    { "id": "CUSTOMER-002", "name": "Taylor Example", "email": "customer-002@example.test", "accountPlan": "pro", "accountStatus": "active", "createdAt": "2026-08-01T00:00:00.000Z" }
+  ],
+  "subscriptions": [
+    { "id": "SUB-001", "customerId": "CUSTOMER-001", "plan": "pro", "status": "active", "renewalDate": "2026-10-01T00:00:00.000Z" },
+    { "id": "SUB-002", "customerId": "CUSTOMER-002", "plan": "pro", "status": "active", "renewalDate": "2026-10-01T00:00:00.000Z" }
+  ],
+  "invoices": [
+    { "id": "INV-001", "customerId": "CUSTOMER-001", "subscriptionId": "SUB-001", "billingPeriod": "2026-09", "amountMinor": 2900, "currency": "USD" },
+    { "id": "INV-002", "customerId": "CUSTOMER-002", "subscriptionId": "SUB-002", "billingPeriod": "2026-09", "amountMinor": 2900, "currency": "USD" }
+  ],
+  "payments": [
+    { "id": "PAY-001", "customerId": "CUSTOMER-001", "invoiceId": "INV-001", "amountMinor": 2900, "currency": "USD", "status": "captured", "refundedAmountMinor": 0, "createdAt": "2026-09-01T10:00:00.000Z" },
+    { "id": "PAY-002", "customerId": "CUSTOMER-001", "invoiceId": "INV-001", "amountMinor": 2900, "currency": "USD", "status": "captured", "refundedAmountMinor": 0, "createdAt": "2026-09-01T10:01:00.000Z" },
+    { "id": "PAY-003", "customerId": "CUSTOMER-002", "invoiceId": "INV-002", "amountMinor": 2900, "currency": "USD", "status": "captured", "refundedAmountMinor": 0, "createdAt": "2026-09-01T10:00:00.000Z" }
+  ]
+}
