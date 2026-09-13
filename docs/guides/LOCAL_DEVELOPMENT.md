@@ -87,7 +87,7 @@ Those are investigation inputs, not proof that any particular refund is allowed.
 
 The migration is transactional and checksum-checked. Re-running setup inserts
 missing fixture IDs without resetting existing records. Add a new migration to
-change schema; do not edit an applied migration. SQL migrations are authoritative
+change schema; applied migrations must remain immutable. SQL migrations are authoritative
 for constraints, and Drizzle provides typed application access.
 
 ## Current validation and remaining work
