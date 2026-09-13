@@ -4,8 +4,11 @@ A local, synthetic SaaS support lab for learning reliable AI business automation
 structured reasoning, deterministic workflows, human approval, idempotency and
 independent outcome verification.
 
-**Under construction.** The first task is the bounded Codex feasibility check.
-No completed support automation or live-AI evaluation is claimed yet.
+**Under construction.** The bounded Codex feasibility check is frozen with live
+runtime disabled: its isolated authentication gate was not satisfied. Development
+continues in **FIXTURE MODE**. No live-AI evaluation is claimed.
+
+See the [actual spike result and limitations](docs/decisions/0001-codex-feasibility.md).
 
 ## Development
 
