@@ -6,15 +6,21 @@ import { createTicketSchema } from '../../../packages/contracts/src/tickets.js';
 import type { Database } from './db/index.js';
 import { auditEvents, automationRuns, customers, invoices, outboxEvents, payments, subscriptions, tickets } from './db/schema.js';
 import { createTicket } from './tickets.js';
+import { claimEvent, classifyFixture, evaluateTriagePolicy } from './triage.js';
 
-export function buildApp({ db, token, now = () => new Date() }: { db: Database; token: string; now?: () => Date }) {
+export function buildApp({ db, token, n8nToken, now = () => new Date() }: { db: Database; token: string; n8nToken?: string; now?: () => Date }) {
   if (token.length < 32) throw new Error('LAB_OPERATOR_TOKEN must contain at least 32 characters.');
   const app = Fastify({ bodyLimit: 16 * 1024, ajv: { customOptions: { removeAdditional: false, coerceTypes: false } } });
   const digest = (value: string) => createHash('sha256').update(value).digest();
   const expected = digest(`Bearer ${token}`);
+  const expectedN8n = n8nToken ? digest(`Bearer ${n8nToken}`) : null;
   app.addHook('onRequest', async (request, reply) => {
     if (request.url === '/healthz') return;
-    if (!timingSafeEqual(expected, digest(request.headers.authorization ?? ''))) {
+    const supplied = digest(request.headers.authorization ?? '');
+    const operator = timingSafeEqual(expected, supplied);
+    const automation = expectedN8n && timingSafeEqual(expectedN8n, supplied);
+    const n8nRoute = request.url.startsWith('/automation/') || request.url.startsWith('/integrations/');
+    if (!operator && !(n8nRoute && automation)) {
       return reply.code(401).send({ error: 'unauthorized' });
     }
   });
@@ -44,6 +50,18 @@ export function buildApp({ db, token, now = () => new Date() }: { db: Database; 
       audit: await db.select().from(auditEvents).where(eq(auditEvents.runId, run.id)).orderBy(asc(auditEvents.createdAt)),
       events: await db.select().from(outboxEvents).where(eq(outboxEvents.runId, run.id)),
     };
+  });
+  app.post<{ Params: { id: string } }>('/automation/v1/events/:id/claim', async (request, reply) => {
+    if (!z.uuid().safeParse(request.params.id).success) return reply.code(400).send({ error: 'invalid_request' });
+    return await claimEvent(db, request.params.id, now()) ?? reply.code(404).send({ error: 'not_found' });
+  });
+  app.post<{ Params: { id: string } }>('/automation/v1/runs/:id/fixture-decision', async (request, reply) => {
+    if (!z.uuid().safeParse(request.params.id).success) return reply.code(400).send({ error: 'invalid_request' });
+    return await classifyFixture(db, request.params.id, now()) ?? reply.code(404).send({ error: 'not_found' });
+  });
+  app.post<{ Params: { id: string } }>('/automation/v1/runs/:id/policy', async (request, reply) => {
+    if (!z.uuid().safeParse(request.params.id).success) return reply.code(400).send({ error: 'invalid_request' });
+    return await evaluateTriagePolicy(db, request.params.id, now()) ?? reply.code(409).send({ error: 'decision_required' });
   });
   app.get<{ Params: { id: string } }>('/integrations/v1/customers/:id', async (request, reply) => {
     const [customer] = await db.select().from(customers).where(eq(customers.id, request.params.id));

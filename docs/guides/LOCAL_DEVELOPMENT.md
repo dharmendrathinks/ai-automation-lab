@@ -1,8 +1,8 @@
 # Local development
 
-Status: **milestone 1 complete**, **FIXTURE MODE**. Live inference remains
+Status: **milestone 2 complete**, **FIXTURE MODE**. Live inference remains
 disabled. The imported foundation workflow checks installation and networking;
-ticket event delivery and Workflow A begin in milestone 2.
+Workflow A performs deterministic triage and backend policy evaluation.
 
 ## Prerequisites and one-time setup
 
@@ -48,12 +48,18 @@ pnpm test
 pnpm typecheck
 pnpm build
 pnpm test:foundation
+pnpm test:triage
 ```
 
 `pnpm test:foundation` starts the API on loopback, runs the actual imported n8n
 workflow and requires a successful `FIXTURE MODE` health response. This proves
 container-to-host networking through `host.docker.internal`; it does not claim
 ticket orchestration or live AI behavior.
+
+`pnpm test:triage` submits synthetic tickets, delivers their outbox events to
+the real n8n webhook, checks the recorded decision and policy, redelivers one
+event to prove duplicate suppression, and verifies an unresolved customer is
+escalated with an explicit reason.
 
 For the exact planned baseline, keep the infrastructure running and use:
 
@@ -112,10 +118,11 @@ Submit this synthetic ticket with the operator token:
 }
 ```
 
-A `201` response returns `ticketId`, `runId` and `eventId`. Milestone 1 leaves
-the run and versioned `ticket.created` outbox event pending. No model,
-classification, refund or account change occurs. Retrying intake currently
-creates another ticket; request deduplication is not implemented.
+A `201` response returns `ticketId`, `runId` and `eventId`. The outbox worker
+delivers the versioned `ticket.created` event at least once. Workflow A records
+fixture classification and deterministic policy; it does not yet post a support
+response, create a refund or change an account. Retrying intake currently creates
+another ticket; intake request deduplication is not implemented.
 
 The `relaydesk-baseline-v1` fixture contains two fictional customers,
 subscriptions, invoices and three captured payments. `CUSTOMER-001` has two

@@ -51,9 +51,31 @@ workflow proves import/bootstrap and networking only; it is not Workflow A and
 does not deliver the ticket outbox event. No video checkpoint was created. No
 video is warranted yet.
 
-Next: milestone 2 implements durable outbox delivery, Workflow A and the
-`FixtureProvider` decision path, including duplicate-event handling and recorded
-triage/escalation evidence.
+Milestone 2 continues from this foundation below.
+
+## Milestone 2 — complete
+
+Annotated tag: `milestone-2-first-orchestration`.
+
+Implemented durable, bounded outbox delivery to the authenticated
+`relaydesk-triage` webhook. The reviewed Workflow A claims the event, requests a
+deterministic structured decision from `FixtureProvider`, and invokes backend
+policy. Runs retain the decision, policy version, outcome, provider duration and
+escalation reason. Workflow claims and fixture jobs are unique per logical event
+and task.
+
+Actual n8n 2.38.7 integration evidence:
+
+- An invoice-download ticket reached n8n and completed with the
+  `automatic_support` policy route.
+- Redelivering the same event retained exactly one workflow claim and one AI job.
+- An unresolved customer routed to `human_follow_up` with reason
+  `customer_identity`.
+- The outbox event was marked delivered only after the webhook returned success.
+
+This is deterministic **FIXTURE MODE** behavior and does not measure model
+accuracy. Milestone 3 will turn the authorized support route into a canonical
+destination response and independently verify it. No video is warranted yet.
 
 See [local development](guides/LOCAL_DEVELOPMENT.md) for reproduction commands,
 available endpoints and the current limitations.

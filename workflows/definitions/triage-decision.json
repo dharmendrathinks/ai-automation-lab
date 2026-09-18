@@ -1,0 +1,74 @@
+{
+  "id": "relaydeskTriage",
+  "name": "RelayDesk Triage Decision",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "relaydesk-triage",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "3e6c326f-c64f-4654-86ec-971940bda975",
+      "name": "Ticket Created",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [0, 0],
+      "webhookId": "relaydesk-triage"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://host.docker.internal:3001/automation/v1/events/{{$json.body.eventId}}/claim",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Authorization", "value": "={{ $('Ticket Created').item.json.headers.authorization }}" }] },
+        "options": {}
+      },
+      "id": "e0bb90e1-26dd-4a48-8d70-8f825c1c7061",
+      "name": "Claim Event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [240, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://host.docker.internal:3001/automation/v1/runs/{{$json.runId}}/fixture-decision",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Authorization", "value": "={{ $('Ticket Created').item.json.headers.authorization }}" }] },
+        "options": {}
+      },
+      "id": "a6d270b5-d0b8-43e1-86cb-f5a9980b0558",
+      "name": "Fixture Decision",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://host.docker.internal:3001/automation/v1/runs/{{$json.runId}}/policy",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Authorization", "value": "={{ $('Ticket Created').item.json.headers.authorization }}" }] },
+        "options": {}
+      },
+      "id": "4bc49ddd-e55b-4c5f-af9c-da9cda40dd4c",
+      "name": "Evaluate Policy",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 0]
+    }
+  ],
+  "connections": {
+    "Ticket Created": { "main": [[{ "node": "Claim Event", "type": "main", "index": 0 }]] },
+    "Claim Event": { "main": [[{ "node": "Fixture Decision", "type": "main", "index": 0 }]] },
+    "Fixture Decision": { "main": [[{ "node": "Evaluate Policy", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "staticData": null,
+  "meta": { "templateCredsSetupCompleted": true },
+  "pinData": {},
+  "versionId": "740799c7-f407-450a-ab4e-a066bdde51ca",
+  "tags": []
+}

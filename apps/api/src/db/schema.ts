@@ -33,6 +33,9 @@ export const tickets = pgTable('tickets', {
 export const automationRuns = pgTable('automation_runs', {
   id: uuid().primaryKey(), ticketId: uuid('ticket_id').notNull().references(() => tickets.id),
   phase: text().notNull(), mode: text().notNull(),
+  decision: jsonb(), policyResult: jsonb('policy_result'), outcome: text(),
+  escalationReason: text('escalation_reason'), claimedAt: timestamp('claimed_at', { withTimezone: true }),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
 });
 export const outboxEvents = pgTable('outbox_events', {
@@ -40,7 +43,22 @@ export const outboxEvents = pgTable('outbox_events', {
   eventType: text('event_type').notNull(),
   payload: jsonb().$type<z.infer<typeof ticketCreatedEventSchema>>().notNull(),
   status: text().notNull(), attempts: integer().notNull().default(0),
+  deliveredAt: timestamp('delivered_at', { withTimezone: true }), lastError: text('last_error'),
+  nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+});
+export const aiJobs = pgTable('ai_jobs', {
+  id: uuid().primaryKey(), runId: uuid('run_id').notNull().references(() => automationRuns.id),
+  task: text().notNull(), provider: text().notNull(), model: text().notNull(), status: text().notNull(),
+  result: jsonb(), errorCode: text('error_code'), durationMs: integer('duration_ms').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+  completedAt: timestamp('completed_at', { withTimezone: true }).notNull(),
+});
+export const workflowExecutions = pgTable('workflow_executions', {
+  id: uuid().primaryKey(), runId: uuid('run_id').notNull().references(() => automationRuns.id),
+  eventId: uuid('event_id').notNull().references(() => outboxEvents.id), workflowRevision: text('workflow_revision').notNull(),
+  attempt: integer().notNull(), technicalStatus: text('technical_status').notNull(),
+  startedAt: timestamp('started_at', { withTimezone: true }).notNull(), completedAt: timestamp('completed_at', { withTimezone: true }),
 });
 export const auditEvents = pgTable('audit_events', {
   id: uuid().primaryKey(), runId: uuid('run_id').notNull().references(() => automationRuns.id),

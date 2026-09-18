@@ -31,6 +31,7 @@ async function loadOrCreateEnv(): Promise<Record<string, string>> {
       N8N_DB_PASSWORD: randomBytes(24).toString('hex'),
       N8N_ENCRYPTION_KEY: randomBytes(32).toString('hex'),
       LAB_OPERATOR_TOKEN: randomBytes(32).toString('hex'),
+      N8N_WEBHOOK_TOKEN: randomBytes(32).toString('hex'),
       POSTGRES_PORT: '55432',
       N8N_PORT: '5678',
       DATABASE_URL: `postgresql://relaydesk:${relaydeskPassword}@127.0.0.1:55432/relaydesk`,
@@ -49,8 +50,13 @@ function run(command: string, args: string[], env: NodeJS.ProcessEnv) {
 }
 
 const localEnv = await loadOrCreateEnv();
+if (!localEnv.N8N_WEBHOOK_TOKEN) {
+  localEnv.N8N_WEBHOOK_TOKEN = randomBytes(32).toString('hex');
+  await writeFile(envPath, `N8N_WEBHOOK_TOKEN=${localEnv.N8N_WEBHOOK_TOKEN}\n`, { encoding: 'utf8', mode: 0o600, flag: 'a' });
+  console.log('Added a separate n8n automation token to the existing private .env.');
+}
 const env = { ...process.env, ...localEnv };
-for (const required of ['DATABASE_URL', 'LAB_OPERATOR_TOKEN', 'POSTGRES_ADMIN_PASSWORD', 'RELAYDESK_DB_PASSWORD', 'N8N_DB_PASSWORD', 'N8N_ENCRYPTION_KEY']) {
+for (const required of ['DATABASE_URL', 'LAB_OPERATOR_TOKEN', 'N8N_WEBHOOK_TOKEN', 'POSTGRES_ADMIN_PASSWORD', 'RELAYDESK_DB_PASSWORD', 'N8N_DB_PASSWORD', 'N8N_ENCRYPTION_KEY']) {
   if (!env[required]) throw new Error(`${required} is required in .env`);
 }
 
@@ -68,5 +74,8 @@ run('docker', [
   'compose', '--env-file', '.env', 'exec', '-T', 'n8n', 'n8n', 'import:workflow',
   '--separate', '--input=/workflows/definitions',
 ], env);
+run('docker', ['compose', '--env-file', '.env', 'exec', '-T', 'n8n', 'n8n', 'publish:workflow', '--id=relaydeskTriage'], env);
+run('docker', ['compose', '--env-file', '.env', 'restart', 'n8n'], env);
+run('docker', ['compose', '--env-file', '.env', 'up', '-d', '--wait', 'n8n'], env);
 
 console.log('RelayDesk infrastructure is healthy, fixtures are seeded, and reviewed workflows are imported.');

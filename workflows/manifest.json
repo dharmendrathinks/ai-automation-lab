@@ -7,6 +7,13 @@
       "file": "definitions/foundation-connectivity.json",
       "purpose": "Milestone 1 import and container-to-host networking proof",
       "published": false
+    },
+    {
+      "id": "relaydeskTriage",
+      "name": "RelayDesk Triage Decision",
+      "file": "definitions/triage-decision.json",
+      "purpose": "Milestone 2 ticket triage and deterministic policy orchestration",
+      "published": true
     }
   ]
 }
