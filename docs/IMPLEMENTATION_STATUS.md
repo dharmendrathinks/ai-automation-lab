@@ -98,5 +98,29 @@ Actual evidence:
 
 Milestone 4 adds exact refund proposals and human approval. No video is warranted yet.
 
+## Milestone 4 — complete
+
+Annotated tag: `milestone-4-approved-refund`.
+
+Duplicate-charge policy now selects the later matching captured payment and
+creates a frozen refund action plus approval record. Approval binds a canonical
+parameter hash, expires after 24 hours, and is committed atomically with the
+outgoing action event. The n8n credential cannot call the reviewer endpoint.
+Workflow B revalidates payment and approval state, commits one refund using the
+stable action key, reads billing state independently and posts a factual response.
+
+Actual evidence:
+
+- Before approval, the refund count remained zero.
+- The restricted n8n token received `401` from the approval endpoint.
+- Operator approval of the exact proposal refunded `PAY-002` for USD 29.00 once.
+- Refund, payment total, action outcome and ticket resolution were independently
+  read and recorded as verified.
+- Approval elapsed time is reported separately; active human review minutes stay
+  N/A until observed evidence exists.
+
+Milestone 5 adds controlled failure, retry, recovery and unknown-outcome scenarios.
+No video is warranted yet.
+
 See [local development](guides/LOCAL_DEVELOPMENT.md) for reproduction commands,
 available endpoints and the current limitations.

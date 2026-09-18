@@ -1,9 +1,11 @@
-import { randomUUID } from 'node:crypto';
-import { and, eq, isNull } from 'drizzle-orm';
+import { createHash, randomUUID } from 'node:crypto';
+import { and, asc, eq, isNull } from 'drizzle-orm';
 import { triageDecisionSchema } from '../../../packages/contracts/src/triage.js';
 import type { TriageDecision } from '../../../packages/contracts/src/triage.js';
 import type { Database } from './db/index.js';
-import { aiJobs, auditEvents, automationRuns, outboxEvents, proposedActions, tickets, workflowExecutions } from './db/schema.js';
+import { aiJobs, approvals, auditEvents, automationRuns, outboxEvents, payments, proposedActions, tickets, workflowExecutions } from './db/schema.js';
+
+const canonicalJson = (value: Record<string, unknown>) => JSON.stringify(Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b))));
 
 function fixtureDecision(message: string, customerResolved: boolean): TriageDecision {
   const text = message.toLowerCase();
@@ -69,6 +71,22 @@ export async function evaluateTriagePolicy(db: Database, runId: string, now: Dat
       if (inserted.length) {
         await tx.insert(outboxEvents).values({ id: eventId, runId, eventType: 'action.ready', payload: { eventId, eventType: 'action.ready', schemaVersion: 1, occurredAt: now.toISOString(), runId, actionId }, status: 'pending', createdAt: now });
         await tx.insert(auditEvents).values({ id: randomUUID(), runId, eventType: 'action.proposed', actor: 'backend:triage-policy-v1', evidence: { actionId, kind: 'support_response', status: 'ready' }, createdAt: now });
+      }
+    }
+    if (route === 'approval_required') {
+      const [ticket] = await tx.select().from(tickets).where(eq(tickets.id, run.ticketId));
+      const candidates = ticket?.customerId ? await tx.select().from(payments).where(and(eq(payments.customerId, ticket.customerId), eq(payments.status, 'captured'))).orderBy(asc(payments.createdAt), asc(payments.id)) : [];
+      const eligible = candidates.filter((candidate, index) => candidates.some((other, otherIndex) => otherIndex < index && other.invoiceId === candidate.invoiceId && other.amountMinor === candidate.amountMinor && other.currency === candidate.currency)).at(-1);
+      const withinAge = eligible ? now.getTime() - eligible.createdAt.getTime() <= 30 * 24 * 60 * 60 * 1000 : false;
+      if (ticket?.customerId && eligible && withinAge && eligible.amountMinor <= 10_000 && eligible.refundedAmountMinor === 0) {
+        const actionId = randomUUID();
+        const parameters = { customerId: ticket.customerId, paymentId: eligible.id, invoiceId: eligible.invoiceId, amountMinor: eligible.amountMinor, currency: eligible.currency };
+        const proposalHash = createHash('sha256').update(canonicalJson(parameters)).digest('hex');
+        const inserted = await tx.insert(proposedActions).values({ id: actionId, runId, kind: 'refund', parameters, policyVersion: 'refund-policy-v1', status: 'pending_approval', idempotencyKey: `action:${actionId}:refund:v1`, businessOutcome: 'pending', createdAt: now, updatedAt: now }).onConflictDoNothing().returning({ id: proposedActions.id });
+        if (inserted.length) {
+          await tx.insert(approvals).values({ id: randomUUID(), actionId, proposalHash, status: 'pending', requestedAt: now, expiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000) });
+          await tx.insert(auditEvents).values({ id: randomUUID(), runId, eventType: 'refund.proposed', actor: 'backend:refund-policy-v1', evidence: { actionId, proposalHash, paymentId: eligible.id, amountMinor: eligible.amountMinor, currency: eligible.currency }, createdAt: now });
+        }
       }
     }
     return { runId, policy, reused: false };

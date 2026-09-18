@@ -21,17 +21,17 @@
       "position": [240, 0]
     },
     {
-      "parameters": { "method": "POST", "url": "=http://host.docker.internal:3001/automation/v1/actions/{{$json.actionId}}/execute-support", "sendHeaders": true, "headerParameters": { "parameters": [{ "name": "Authorization", "value": "={{ $('Action Ready').item.json.headers.authorization }}" }] }, "options": {} },
+      "parameters": { "method": "POST", "url": "=http://host.docker.internal:3001/automation/v1/actions/{{$json.actionId}}/execute", "sendHeaders": true, "headerParameters": { "parameters": [{ "name": "Authorization", "value": "={{ $('Action Ready').item.json.headers.authorization }}" }] }, "options": {} },
       "id": "d61a2740-4e74-4fdc-a182-84341dbb9c3f",
-      "name": "Execute Support Response",
+      "name": "Execute Authorized Action",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [480, 0]
     },
     {
-      "parameters": { "method": "POST", "url": "=http://host.docker.internal:3001/automation/v1/actions/{{$json.actionId}}/verify-support", "sendHeaders": true, "headerParameters": { "parameters": [{ "name": "Authorization", "value": "={{ $('Action Ready').item.json.headers.authorization }}" }] }, "options": {} },
+      "parameters": { "method": "POST", "url": "=http://host.docker.internal:3001/automation/v1/actions/{{$json.actionId}}/verify", "sendHeaders": true, "headerParameters": { "parameters": [{ "name": "Authorization", "value": "={{ $('Action Ready').item.json.headers.authorization }}" }] }, "options": {} },
       "id": "86fa3f0d-d7b2-49c6-b8a0-62f0b42f6a67",
-      "name": "Verify Support Response",
+      "name": "Verify Business Outcome",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [720, 0]
@@ -39,8 +39,8 @@
   ],
   "connections": {
     "Action Ready": { "main": [[{ "node": "Claim Action", "type": "main", "index": 0 }]] },
-    "Claim Action": { "main": [[{ "node": "Execute Support Response", "type": "main", "index": 0 }]] },
-    "Execute Support Response": { "main": [[{ "node": "Verify Support Response", "type": "main", "index": 0 }]] }
+    "Claim Action": { "main": [[{ "node": "Execute Authorized Action", "type": "main", "index": 0 }]] },
+    "Execute Authorized Action": { "main": [[{ "node": "Verify Business Outcome", "type": "main", "index": 0 }]] }
   },
   "settings": { "executionOrder": "v1" },
   "staticData": null,

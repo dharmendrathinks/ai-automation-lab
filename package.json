@@ -14,6 +14,7 @@
     "test:foundation": "tsx --env-file=.env scripts/test-foundation.ts",
     "test:triage": "tsx --env-file=.env scripts/test-triage.ts",
     "test:support": "tsx --env-file=.env scripts/test-support-response.ts",
+    "test:refund": "tsx --env-file=.env scripts/test-approved-refund.ts",
     "test:baseline": "sh scripts/test-baseline.sh",
     "doctor": "tsx scripts/doctor.ts",
     "setup": "tsx scripts/setup-local.ts",

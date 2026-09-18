@@ -10,7 +10,7 @@ continues in **FIXTURE MODE**. No live-AI evaluation is claimed.
 
 See the [actual spike result and limitations](docs/decisions/0001-codex-feasibility.md).
 
-Milestone 3 is complete. RelayDesk stores a ticket, automation run, audit entry
+Milestone 4 is complete. RelayDesk stores a ticket, automation run, audit entry
 and outbox event in one PostgreSQL transaction. The pinned PostgreSQL 18.6 and
 n8n 2.38.7 services have reproducible local bootstrap, separate databases and
 credentials, and a reviewed connectivity workflow that proves n8n can reach the
@@ -18,7 +18,9 @@ loopback-bound host API. Durable outbox delivery now invokes Workflow A, which
 uses `FixtureProvider`, records a structured decision, applies backend policy and
 suppresses duplicate logical work. Workflow B now stores a canonical support
 message, reads it back through the destination API, and resolves the ticket only
-after independent verification.
+after independent verification. Duplicate-charge cases now produce an immutable
+refund proposal, require an exact human approval, execute idempotently, and are
+verified through the billing read path.
 
 ## Development
 
@@ -34,6 +36,7 @@ pnpm build
 pnpm test:foundation
 pnpm test:triage
 pnpm test:support
+pnpm test:refund
 ```
 
 Tests use fake processes and synthetic inputs; they do not call a model.

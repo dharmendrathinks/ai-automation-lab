@@ -79,3 +79,15 @@ export const operationReceipts = pgTable('operation_receipts', {
   operation: text().notNull(), idempotencyKey: text('idempotency_key').notNull(), requestHash: text('request_hash').notNull(),
   result: jsonb().$type<Record<string, unknown>>().notNull(), createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
 });
+export const approvals = pgTable('approvals', {
+  id: uuid().primaryKey(), actionId: uuid('action_id').notNull().references(() => proposedActions.id).unique(),
+  proposalHash: text('proposal_hash').notNull(), status: text().notNull(), reviewer: text(), decisionReason: text('decision_reason'),
+  requestedAt: timestamp('requested_at', { withTimezone: true }).notNull(), decidedAt: timestamp('decided_at', { withTimezone: true }),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+});
+export const refunds = pgTable('refunds', {
+  id: uuid().primaryKey(), paymentId: text('payment_id').notNull().references(() => payments.id).unique(),
+  actionId: uuid('action_id').notNull().references(() => proposedActions.id).unique(), customerId: text('customer_id').notNull().references(() => customers.id),
+  amountMinor: integer('amount_minor').notNull(), currency: text().notNull(), status: text().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+});

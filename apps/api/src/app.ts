@@ -4,10 +4,10 @@ import { asc, desc, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { createTicketSchema } from '../../../packages/contracts/src/tickets.js';
 import type { Database } from './db/index.js';
-import { auditEvents, automationRuns, customers, invoices, outboxEvents, payments, proposedActions, subscriptions, ticketMessages, tickets } from './db/schema.js';
+import { approvals, auditEvents, automationRuns, customers, invoices, outboxEvents, payments, proposedActions, refunds, subscriptions, ticketMessages, tickets } from './db/schema.js';
 import { createTicket } from './tickets.js';
 import { claimEvent, classifyFixture, evaluateTriagePolicy } from './triage.js';
-import { claimAction, executeSupportResponse, verifySupportResponse } from './actions.js';
+import { claimAction, decideApproval, executeAction, executeSupportResponse, verifyAction, verifySupportResponse } from './actions.js';
 
 export function buildApp({ db, token, n8nToken, now = () => new Date() }: { db: Database; token: string; n8nToken?: string; now?: () => Date }) {
   if (token.length < 32) throw new Error('LAB_OPERATOR_TOKEN must contain at least 32 characters.');
@@ -43,12 +43,13 @@ export function buildApp({ db, token, n8nToken, now = () => new Date() }: { db: 
       count(*) FILTER (WHERE t.status = 'resolved')::int AS resolved,
       count(*) FILTER (WHERE t.status = 'human_follow_up')::int AS escalated,
       count(*) FILTER (WHERE a.business_outcome = 'verified')::int AS verified_actions,
-      avg(EXTRACT(EPOCH FROM (a.updated_at - t.created_at)) * 1000) FILTER (WHERE a.business_outcome = 'verified') AS mean_handling_ms
+      avg(EXTRACT(EPOCH FROM (a.updated_at - t.created_at)) * 1000) FILTER (WHERE a.business_outcome = 'verified') AS mean_handling_ms,
+      (SELECT avg(EXTRACT(EPOCH FROM (decided_at - requested_at)) * 1000) FROM approvals WHERE decided_at IS NOT NULL) AS mean_approval_elapsed_ms
       FROM tickets t
       LEFT JOIN automation_runs r ON r.ticket_id = t.id
       LEFT JOIN proposed_actions a ON a.run_id = r.id`);
-    const row = result.rows[0] as { tickets: number; resolved: number; escalated: number; verified_actions: number; mean_handling_ms: string | null };
-    return { mode: 'FIXTURE MODE', cohort: { tickets: row.tickets }, automationRate: row.tickets ? row.resolved / row.tickets : null, humanEscalationRate: row.tickets ? row.escalated / row.tickets : null, verifiedCompletionRate: row.tickets ? row.resolved / row.tickets : null, verifiedActions: row.verified_actions, meanHandlingMs: row.mean_handling_ms === null ? null : Number(row.mean_handling_ms), humanMinutesPerTicket: null, estimatedHumanMinutesSaved: null };
+    const row = result.rows[0] as { tickets: number; resolved: number; escalated: number; verified_actions: number; mean_handling_ms: string | null; mean_approval_elapsed_ms: string | null };
+    return { mode: 'FIXTURE MODE', cohort: { tickets: row.tickets }, automationRate: row.tickets ? row.resolved / row.tickets : null, humanEscalationRate: row.tickets ? row.escalated / row.tickets : null, verifiedCompletionRate: row.tickets ? row.resolved / row.tickets : null, verifiedActions: row.verified_actions, meanHandlingMs: row.mean_handling_ms === null ? null : Number(row.mean_handling_ms), meanApprovalElapsedMs: row.mean_approval_elapsed_ms === null ? null : Number(row.mean_approval_elapsed_ms), activeReviewMinutes: null, humanMinutesPerTicket: null, estimatedHumanMinutesSaved: null };
   });
   app.post('/api/v1/tickets', { schema: { body: z.toJSONSchema(createTicketSchema, { target: 'draft-7' }) } }, async (request, reply) => {
     const input = createTicketSchema.safeParse(request.body);
@@ -94,6 +95,21 @@ export function buildApp({ db, token, n8nToken, now = () => new Date() }: { db: 
     if (!z.uuid().safeParse(request.params.id).success) return reply.code(400).send({ error: 'invalid_request' });
     return await verifySupportResponse(db, request.params.id, now()) ?? reply.code(404).send({ error: 'not_found' });
   });
+  app.post<{ Params: { id: string } }>('/automation/v1/actions/:id/execute', async (request, reply) => {
+    if (!z.uuid().safeParse(request.params.id).success) return reply.code(400).send({ error: 'invalid_request' });
+    return await executeAction(db, request.params.id, now()) ?? reply.code(404).send({ error: 'not_found' });
+  });
+  app.post<{ Params: { id: string } }>('/automation/v1/actions/:id/verify', async (request, reply) => {
+    if (!z.uuid().safeParse(request.params.id).success) return reply.code(400).send({ error: 'invalid_request' });
+    return await verifyAction(db, request.params.id, now()) ?? reply.code(404).send({ error: 'not_found' });
+  });
+  app.get('/api/v1/approvals', async () => ({ approvals: await db.select().from(approvals).orderBy(desc(approvals.requestedAt)) }));
+  app.post<{ Params: { id: string }; Body: unknown }>('/api/v1/approvals/:id/decision', async (request, reply) => {
+    if (!z.uuid().safeParse(request.params.id).success) return reply.code(400).send({ error: 'invalid_request' });
+    const input = z.strictObject({ decision: z.enum(['approved', 'rejected']), reason: z.string().trim().min(1).max(500) }).safeParse(request.body);
+    if (!input.success) return reply.code(400).send({ error: 'invalid_request' });
+    return await decideApproval(db, request.params.id, input.data.decision, input.data.reason, now()) ?? reply.code(404).send({ error: 'not_found' });
+  });
   app.get<{ Params: { id: string } }>('/api/v1/runs/:id/actions', async (request, reply) => {
     if (!z.uuid().safeParse(request.params.id).success) return reply.code(400).send({ error: 'invalid_request' });
     return { actions: await db.select().from(proposedActions).where(eq(proposedActions.runId, request.params.id)) };
@@ -124,6 +140,11 @@ export function buildApp({ db, token, n8nToken, now = () => new Date() }: { db: 
   app.get<{ Params: { id: string } }>('/integrations/v1/payments/:id', async (request, reply) => {
     const [payment] = await db.select().from(payments).where(eq(payments.id, request.params.id));
     return payment ?? reply.code(404).send({ error: 'not_found' });
+  });
+  app.get<{ Params: { id: string } }>('/integrations/v1/refunds/:id', async (request, reply) => {
+    if (!z.uuid().safeParse(request.params.id).success) return reply.code(400).send({ error: 'invalid_request' });
+    const [refund] = await db.select().from(refunds).where(eq(refunds.id, request.params.id));
+    return refund ?? reply.code(404).send({ error: 'not_found' });
   });
   return app;
 }
