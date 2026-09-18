@@ -75,6 +75,7 @@ run('docker', [
   '--separate', '--input=/workflows/definitions',
 ], env);
 run('docker', ['compose', '--env-file', '.env', 'exec', '-T', 'n8n', 'n8n', 'publish:workflow', '--id=relaydeskTriage'], env);
+run('docker', ['compose', '--env-file', '.env', 'exec', '-T', 'n8n', 'n8n', 'publish:workflow', '--id=relaydeskAction'], env);
 run('docker', ['compose', '--env-file', '.env', 'restart', 'n8n'], env);
 run('docker', ['compose', '--env-file', '.env', 'up', '-d', '--wait', 'n8n'], env);
 

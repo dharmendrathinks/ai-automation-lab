@@ -1,6 +1,6 @@
 # Local development
 
-Status: **milestone 2 complete**, **FIXTURE MODE**. Live inference remains
+Status: **milestone 3 complete**, **FIXTURE MODE**. Live inference remains
 disabled. The imported foundation workflow checks installation and networking;
 Workflow A performs deterministic triage and backend policy evaluation.
 
@@ -49,6 +49,7 @@ pnpm typecheck
 pnpm build
 pnpm test:foundation
 pnpm test:triage
+pnpm test:support
 ```
 
 `pnpm test:foundation` starts the API on loopback, runs the actual imported n8n
@@ -60,6 +61,11 @@ ticket orchestration or live AI behavior.
 the real n8n webhook, checks the recorded decision and policy, redelivers one
 event to prove duplicate suppression, and verifies an unresolved customer is
 escalated with an explicit reason.
+
+`pnpm test:support` runs both workflows, checks that the canonical response exists
+in the simulated destination, verifies the action and ticket resolution, and
+proves replay does not create another message. Open `http://127.0.0.1:3001/dashboard`
+while `pnpm dev` is running to inspect a run timeline with the local operator token.
 
 For the exact planned baseline, keep the infrastructure running and use:
 

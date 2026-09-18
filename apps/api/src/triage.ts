@@ -3,7 +3,7 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { triageDecisionSchema } from '../../../packages/contracts/src/triage.js';
 import type { TriageDecision } from '../../../packages/contracts/src/triage.js';
 import type { Database } from './db/index.js';
-import { aiJobs, auditEvents, automationRuns, outboxEvents, tickets, workflowExecutions } from './db/schema.js';
+import { aiJobs, auditEvents, automationRuns, outboxEvents, proposedActions, tickets, workflowExecutions } from './db/schema.js';
 
 function fixtureDecision(message: string, customerResolved: boolean): TriageDecision {
   const text = message.toLowerCase();
@@ -61,6 +61,16 @@ export async function evaluateTriagePolicy(db: Database, runId: string, now: Dat
     await tx.update(tickets).set({ status: ticketStatus }).where(eq(tickets.id, run.ticketId));
     await tx.update(workflowExecutions).set({ technicalStatus: 'completed', completedAt: now }).where(eq(workflowExecutions.runId, runId));
     await tx.insert(auditEvents).values({ id: randomUUID(), runId, eventType: 'triage.policy_recorded', actor: 'backend:triage-policy-v1', evidence: policy, createdAt: now });
+    if (route === 'automatic_support') {
+      const actionId = randomUUID();
+      const eventId = randomUUID();
+      const text = 'You can download invoices from Settings → Billing → Invoices.';
+      const inserted = await tx.insert(proposedActions).values({ id: actionId, runId, kind: 'support_response', parameters: { text }, policyVersion: 'triage-policy-v1', status: 'ready', idempotencyKey: `action:${actionId}:support-response:v1`, businessOutcome: 'pending', createdAt: now, updatedAt: now }).onConflictDoNothing().returning({ id: proposedActions.id });
+      if (inserted.length) {
+        await tx.insert(outboxEvents).values({ id: eventId, runId, eventType: 'action.ready', payload: { eventId, eventType: 'action.ready', schemaVersion: 1, occurredAt: now.toISOString(), runId, actionId }, status: 'pending', createdAt: now });
+        await tx.insert(auditEvents).values({ id: randomUUID(), runId, eventType: 'action.proposed', actor: 'backend:triage-policy-v1', evidence: { actionId, kind: 'support_response', status: 'ready' }, createdAt: now });
+      }
+    }
     return { runId, policy, reused: false };
   });
 }

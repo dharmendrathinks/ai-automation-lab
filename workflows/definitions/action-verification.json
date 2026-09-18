@@ -1,0 +1,51 @@
+{
+  "id": "relaydeskAction",
+  "name": "RelayDesk Action Verification",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "relaydesk-action", "responseMode": "lastNode", "options": {} },
+      "id": "c4d08c15-0e3d-42a8-85a5-84c580c88fb8",
+      "name": "Action Ready",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [0, 0],
+      "webhookId": "relaydesk-action"
+    },
+    {
+      "parameters": { "method": "POST", "url": "=http://host.docker.internal:3001/automation/v1/actions/{{$json.body.actionId}}/claim", "sendHeaders": true, "headerParameters": { "parameters": [{ "name": "Authorization", "value": "={{ $('Action Ready').item.json.headers.authorization }}" }] }, "options": {} },
+      "id": "fd0f5bd6-cef2-4cce-a63d-7e470547d552",
+      "name": "Claim Action",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [240, 0]
+    },
+    {
+      "parameters": { "method": "POST", "url": "=http://host.docker.internal:3001/automation/v1/actions/{{$json.actionId}}/execute-support", "sendHeaders": true, "headerParameters": { "parameters": [{ "name": "Authorization", "value": "={{ $('Action Ready').item.json.headers.authorization }}" }] }, "options": {} },
+      "id": "d61a2740-4e74-4fdc-a182-84341dbb9c3f",
+      "name": "Execute Support Response",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 0]
+    },
+    {
+      "parameters": { "method": "POST", "url": "=http://host.docker.internal:3001/automation/v1/actions/{{$json.actionId}}/verify-support", "sendHeaders": true, "headerParameters": { "parameters": [{ "name": "Authorization", "value": "={{ $('Action Ready').item.json.headers.authorization }}" }] }, "options": {} },
+      "id": "86fa3f0d-d7b2-49c6-b8a0-62f0b42f6a67",
+      "name": "Verify Support Response",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 0]
+    }
+  ],
+  "connections": {
+    "Action Ready": { "main": [[{ "node": "Claim Action", "type": "main", "index": 0 }]] },
+    "Claim Action": { "main": [[{ "node": "Execute Support Response", "type": "main", "index": 0 }]] },
+    "Execute Support Response": { "main": [[{ "node": "Verify Support Response", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "staticData": null,
+  "meta": { "templateCredsSetupCompleted": true },
+  "pinData": {},
+  "versionId": "2c444d7e-3477-471a-afb2-8ccac9489e24",
+  "tags": []
+}

@@ -77,5 +77,26 @@ This is deterministic **FIXTURE MODE** behavior and does not measure model
 accuracy. Milestone 3 will turn the authorized support route into a canonical
 destination response and independently verify it. No video is warranted yet.
 
+## Milestone 3 — complete
+
+Annotated tag: `milestone-3-verified-response`.
+
+The automatic-support policy route now creates a durable action and versioned
+`action.ready` event. Workflow B claims that action, writes one canonical invoice
+response with a stable idempotency key, then calls an independent read-path
+verifier. Only the verified destination message resolves the ticket.
+
+Actual evidence:
+
+- The n8n action workflow stored exactly one customer-visible message.
+- Verification read the ticket destination and matched the expected canonical text.
+- The action outcome became `verified` and ticket resolution became `resolved`.
+- Reprocessing created neither a second message nor a second operation receipt.
+- `/dashboard` exposes the authenticated run timeline in a minimal local UI.
+- `/api/v1/metrics/outcomes` reports fixture-mode automation, escalation,
+  verified completion and handling-time data; missing human-effort evidence is N/A.
+
+Milestone 4 adds exact refund proposals and human approval. No video is warranted yet.
+
 See [local development](guides/LOCAL_DEVELOPMENT.md) for reproduction commands,
 available endpoints and the current limitations.

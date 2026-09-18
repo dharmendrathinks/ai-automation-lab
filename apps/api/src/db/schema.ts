@@ -1,6 +1,4 @@
 import { integer, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
-import type { z } from 'zod';
-import type { ticketCreatedEventSchema } from '../../../../packages/contracts/src/tickets.js';
 
 export const customers = pgTable('customers', {
   id: text().primaryKey(), name: text().notNull(), email: text().notNull().unique(),
@@ -41,7 +39,7 @@ export const automationRuns = pgTable('automation_runs', {
 export const outboxEvents = pgTable('outbox_events', {
   id: uuid().primaryKey(), runId: uuid('run_id').notNull().references(() => automationRuns.id),
   eventType: text('event_type').notNull(),
-  payload: jsonb().$type<z.infer<typeof ticketCreatedEventSchema>>().notNull(),
+  payload: jsonb().$type<Record<string, unknown>>().notNull(),
   status: text().notNull(), attempts: integer().notNull().default(0),
   deliveredAt: timestamp('delivered_at', { withTimezone: true }), lastError: text('last_error'),
   nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true }),
@@ -64,4 +62,20 @@ export const auditEvents = pgTable('audit_events', {
   id: uuid().primaryKey(), runId: uuid('run_id').notNull().references(() => automationRuns.id),
   eventType: text('event_type').notNull(), actor: text().notNull(),
   evidence: jsonb().notNull(), createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+});
+export const proposedActions = pgTable('proposed_actions', {
+  id: uuid().primaryKey(), runId: uuid('run_id').notNull().references(() => automationRuns.id),
+  kind: text().notNull(), parameters: jsonb().$type<Record<string, unknown>>().notNull(),
+  policyVersion: text('policy_version').notNull(), status: text().notNull(),
+  idempotencyKey: text('idempotency_key').notNull().unique(), businessOutcome: text('business_outcome').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull(), updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
+});
+export const ticketMessages = pgTable('ticket_messages', {
+  id: uuid().primaryKey(), ticketId: uuid('ticket_id').notNull().references(() => tickets.id),
+  actionId: uuid('action_id').notNull().references(() => proposedActions.id).unique(), authorType: text('author_type').notNull(),
+  text: text().notNull(), visibility: text().notNull(), createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+});
+export const operationReceipts = pgTable('operation_receipts', {
+  operation: text().notNull(), idempotencyKey: text('idempotency_key').notNull(), requestHash: text('request_hash').notNull(),
+  result: jsonb().$type<Record<string, unknown>>().notNull(), createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
 });

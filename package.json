@@ -13,6 +13,7 @@
     "test": "vitest run",
     "test:foundation": "tsx --env-file=.env scripts/test-foundation.ts",
     "test:triage": "tsx --env-file=.env scripts/test-triage.ts",
+    "test:support": "tsx --env-file=.env scripts/test-support-response.ts",
     "test:baseline": "sh scripts/test-baseline.sh",
     "doctor": "tsx scripts/doctor.ts",
     "setup": "tsx scripts/setup-local.ts",
@@ -24,7 +25,7 @@
     "db:setup": "tsx --env-file=.env scripts/db-setup.ts",
     "dev:api": "tsx --env-file=.env apps/api/src/server.ts",
     "worker:outbox": "tsx --env-file=.env scripts/outbox-worker.ts",
-    "workflows:import": "docker compose --env-file .env exec -T n8n n8n import:workflow --separate --input=/workflows/definitions && docker compose --env-file .env exec -T n8n n8n publish:workflow --id=relaydeskTriage",
+    "workflows:import": "docker compose --env-file .env exec -T n8n n8n import:workflow --separate --input=/workflows/definitions && docker compose --env-file .env exec -T n8n n8n publish:workflow --id=relaydeskTriage && docker compose --env-file .env exec -T n8n n8n publish:workflow --id=relaydeskAction",
     "workflows:list": "docker compose --env-file .env exec -T n8n n8n list:workflow"
   },
   "dependencies": {
