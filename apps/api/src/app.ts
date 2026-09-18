@@ -1,10 +1,10 @@
-import { createHash, timingSafeEqual } from 'node:crypto';
+import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
 import Fastify from 'fastify';
 import { asc, desc, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { createTicketSchema } from '../../../packages/contracts/src/tickets.js';
 import type { Database } from './db/index.js';
-import { approvals, auditEvents, automationRuns, customers, invoices, outboxEvents, payments, proposedActions, refunds, subscriptions, ticketMessages, tickets } from './db/schema.js';
+import { approvals, auditEvents, automationRuns, customers, invoices, outboxEvents, payments, proposedActions, refunds, scenarioInstances, subscriptions, ticketMessages, tickets } from './db/schema.js';
 import { createTicket } from './tickets.js';
 import { claimEvent, classifyFixture, evaluateTriagePolicy } from './triage.js';
 import { claimAction, decideApproval, executeAction, executeSupportResponse, verifyAction, verifySupportResponse } from './actions.js';
@@ -49,7 +49,16 @@ export function buildApp({ db, token, n8nToken, now = () => new Date() }: { db: 
       LEFT JOIN automation_runs r ON r.ticket_id = t.id
       LEFT JOIN proposed_actions a ON a.run_id = r.id`);
     const row = result.rows[0] as { tickets: number; resolved: number; escalated: number; verified_actions: number; mean_handling_ms: string | null; mean_approval_elapsed_ms: string | null };
-    return { mode: 'FIXTURE MODE', cohort: { tickets: row.tickets }, automationRate: row.tickets ? row.resolved / row.tickets : null, humanEscalationRate: row.tickets ? row.escalated / row.tickets : null, verifiedCompletionRate: row.tickets ? row.resolved / row.tickets : null, verifiedActions: row.verified_actions, meanHandlingMs: row.mean_handling_ms === null ? null : Number(row.mean_handling_ms), meanApprovalElapsedMs: row.mean_approval_elapsed_ms === null ? null : Number(row.mean_approval_elapsed_ms), activeReviewMinutes: null, humanMinutesPerTicket: null, estimatedHumanMinutesSaved: null };
+    const reliability = await db.execute(sql`SELECT
+      (SELECT count(*)::int FROM proposed_actions) AS attempted_actions,
+      (SELECT count(*)::int FROM proposed_actions WHERE business_outcome='failed') AS failed_actions,
+      (SELECT count(*)::int FROM (SELECT action_id FROM action_attempts GROUP BY action_id HAVING count(*) > 1) retried) AS retried_actions,
+      (SELECT count(DISTINCT run_id)::int FROM audit_events WHERE event_type='verification.unknown') AS ever_unknown,
+      (SELECT count(DISTINCT a.id)::int FROM proposed_actions a WHERE a.business_outcome='verified' AND EXISTS (SELECT 1 FROM audit_events e WHERE e.run_id=a.run_id AND e.event_type='verification.unknown')) AS recovered_actions,
+      (SELECT count(*)::int FROM proposed_actions WHERE business_outcome='unknown') AS current_unknown,
+      (SELECT count(*)::int FROM audit_events WHERE event_type='duplicate.event_suppressed') + (SELECT count(*)::int FROM action_attempts WHERE result='idempotent_replay') AS duplicate_prevention_events`);
+    const rel = reliability.rows[0] as Record<string, number | null>;
+    return { mode: 'FIXTURE MODE', cohort: { tickets: row.tickets }, automationRate: row.tickets ? row.resolved / row.tickets : null, humanEscalationRate: row.tickets ? row.escalated / row.tickets : null, verifiedCompletionRate: row.tickets ? row.resolved / row.tickets : null, verifiedActions: row.verified_actions, meanHandlingMs: row.mean_handling_ms === null ? null : Number(row.mean_handling_ms), meanApprovalElapsedMs: row.mean_approval_elapsed_ms === null ? null : Number(row.mean_approval_elapsed_ms), activeReviewMinutes: null, humanMinutesPerTicket: null, estimatedHumanMinutesSaved: null, reliability: { attemptedActions: rel.attempted_actions ?? 0, failureRate: rel.attempted_actions ? Number(rel.failed_actions ?? 0) / rel.attempted_actions : null, retriedActions: rel.retried_actions ?? 0, everUnknown: rel.ever_unknown ?? 0, currentUnknown: rel.current_unknown ?? 0, recoveredActions: rel.recovered_actions ?? 0, duplicatePreventionEvents: rel.duplicate_prevention_events ?? 0 } };
   });
   app.post('/api/v1/tickets', { schema: { body: z.toJSONSchema(createTicketSchema, { target: 'draft-7' }) } }, async (request, reply) => {
     const input = createTicketSchema.safeParse(request.body);
@@ -97,7 +106,10 @@ export function buildApp({ db, token, n8nToken, now = () => new Date() }: { db: 
   });
   app.post<{ Params: { id: string } }>('/automation/v1/actions/:id/execute', async (request, reply) => {
     if (!z.uuid().safeParse(request.params.id).success) return reply.code(400).send({ error: 'invalid_request' });
-    return await executeAction(db, request.params.id, now()) ?? reply.code(404).send({ error: 'not_found' });
+    const result = await executeAction(db, request.params.id, now());
+    if (!result) return reply.code(404).send({ error: 'not_found' });
+    if ('simulateLostResponse' in result && result.simulateLostResponse) return reply.code(503).send({ error: 'injected_lost_response' });
+    return result;
   });
   app.post<{ Params: { id: string } }>('/automation/v1/actions/:id/verify', async (request, reply) => {
     if (!z.uuid().safeParse(request.params.id).success) return reply.code(400).send({ error: 'invalid_request' });
@@ -109,6 +121,21 @@ export function buildApp({ db, token, n8nToken, now = () => new Date() }: { db: 
     const input = z.strictObject({ decision: z.enum(['approved', 'rejected']), reason: z.string().trim().min(1).max(500) }).safeParse(request.body);
     if (!input.success) return reply.code(400).send({ error: 'invalid_request' });
     return await decideApproval(db, request.params.id, input.data.decision, input.data.reason, now()) ?? reply.code(404).send({ error: 'not_found' });
+  });
+  app.post<{ Params: { id: string }; Body: unknown }>('/api/v1/scenarios/:id/start', async (request, reply) => {
+    const fixture = z.enum(['fail-before-commit', 'commit-lost-response', 'false-success', 'verification-unavailable']).safeParse(request.params.id);
+    const input = z.strictObject({ customerRef: z.string().default('CUSTOMER-001'), message: z.string().default('I was charged twice this month.'), failAttempts: z.number().int().min(1).max(2).optional(), unavailableReads: z.number().int().min(1).max(5).optional() }).safeParse(request.body ?? {});
+    if (!fixture.success || !input.success) return reply.code(400).send({ error: 'invalid_request' });
+    const created = await createTicket(db, { customerRef: input.data.customerRef, message: input.data.message }, now());
+    const mode = fixture.data.replaceAll('-', '_');
+    await db.insert(scenarioInstances).values({ id: randomUUID(), runId: created.runId, fixtureId: fixture.data, config: { mode, failAttempts: input.data.failAttempts ?? 1, unavailableReads: input.data.unavailableReads ?? 1 }, counters: {}, createdAt: now() });
+    return reply.code(201).send({ ...created, scenario: fixture.data });
+  });
+  app.post<{ Params: { id: string } }>('/api/v1/runs/:id/reconcile', async (request, reply) => {
+    if (!z.uuid().safeParse(request.params.id).success) return reply.code(400).send({ error: 'invalid_request' });
+    const [action] = await db.select().from(proposedActions).where(eq(proposedActions.runId, request.params.id));
+    if (!action) return reply.code(404).send({ error: 'not_found' });
+    return await verifyAction(db, action.id, now()) ?? reply.code(404).send({ error: 'not_found' });
   });
   app.get<{ Params: { id: string } }>('/api/v1/runs/:id/actions', async (request, reply) => {
     if (!z.uuid().safeParse(request.params.id).success) return reply.code(400).send({ error: 'invalid_request' });

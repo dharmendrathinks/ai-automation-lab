@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { and, eq, sql } from 'drizzle-orm';
 import type { Database } from './db/index.js';
-import { approvals, auditEvents, automationRuns, operationReceipts, payments, proposedActions, refunds, ticketMessages, tickets } from './db/schema.js';
+import { actionAttempts, approvals, auditEvents, automationRuns, operationReceipts, payments, proposedActions, refunds, scenarioInstances, ticketMessages, tickets } from './db/schema.js';
 
 const canonicalJson = (value: Record<string, unknown>) => JSON.stringify(Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b))));
 
@@ -93,12 +93,39 @@ export async function verifyRefund(db: Database, actionId: string, now: Date) {
 }
 
 export async function executeAction(db: Database, actionId: string, now: Date) {
-  const [action] = await db.select({ kind: proposedActions.kind }).from(proposedActions).where(eq(proposedActions.id, actionId));
-  return action?.kind === 'refund' ? executeRefund(db, actionId, now) : executeSupportResponse(db, actionId, now);
+  const [action] = await db.select().from(proposedActions).where(eq(proposedActions.id, actionId));
+  if (!action) return null;
+  const [scenario] = await db.select().from(scenarioInstances).where(eq(scenarioInstances.runId, action.runId));
+  const previous = await db.select({ id: actionAttempts.id }).from(actionAttempts).where(eq(actionAttempts.actionId, actionId));
+  const attempt = previous.length + 1;
+  const mode = String(scenario?.config.mode ?? 'normal');
+  if (mode === 'fail_before_commit' && attempt <= Number(scenario?.config.failAttempts ?? 1)) {
+    await db.insert(actionAttempts).values({ id: randomUUID(), actionId, attempt, result: 'failed_before_commit', evidence: { mode }, createdAt: now });
+    throw new Error('injected_failure_before_commit');
+  }
+  if (mode === 'false_success') {
+    await db.insert(actionAttempts).values({ id: randomUUID(), actionId, attempt, result: 'success_without_mutation', evidence: { mode }, createdAt: now });
+    return { actionId, status: 'completed', syntheticSuccessWithoutMutation: true };
+  }
+  const result = action.kind === 'refund' ? await executeRefund(db, actionId, now) : await executeSupportResponse(db, actionId, now);
+  const lost = mode === 'commit_lost_response' && result && !result.replayed && attempt === 1;
+  await db.insert(actionAttempts).values({ id: randomUUID(), actionId, attempt, result: lost ? 'committed_response_lost' : result?.replayed ? 'idempotent_replay' : 'committed', evidence: { mode }, createdAt: now });
+  return result && lost ? { ...result, simulateLostResponse: true } : result;
 }
 export async function verifyAction(db: Database, actionId: string, now: Date) {
-  const [action] = await db.select({ kind: proposedActions.kind }).from(proposedActions).where(eq(proposedActions.id, actionId));
-  return action?.kind === 'refund' ? verifyRefund(db, actionId, now) : verifySupportResponse(db, actionId, now);
+  const [action] = await db.select().from(proposedActions).where(eq(proposedActions.id, actionId));
+  if (!action) return null;
+  const [scenario] = await db.select().from(scenarioInstances).where(eq(scenarioInstances.runId, action.runId));
+  if (scenario && scenario.config.mode === 'verification_unavailable') {
+    const reads = Number(scenario.counters.verificationReads ?? 0) + 1;
+    await db.update(scenarioInstances).set({ counters: { ...scenario.counters, verificationReads: reads } }).where(eq(scenarioInstances.id, scenario.id));
+    if (reads <= Number(scenario.config.unavailableReads ?? 1)) {
+      await db.update(proposedActions).set({ status: 'unknown', businessOutcome: 'unknown', updatedAt: now }).where(eq(proposedActions.id, actionId));
+      await db.insert(auditEvents).values({ id: randomUUID(), runId: action.runId, eventType: 'verification.unknown', actor: 'verification:billing-read', evidence: { actionId, reads }, createdAt: now });
+      return { actionId, runId: action.runId, outcome: 'unknown', reconciliationRequired: true };
+    }
+  }
+  return action.kind === 'refund' ? verifyRefund(db, actionId, now) : verifySupportResponse(db, actionId, now);
 }
 
 export async function executeSupportResponse(db: Database, actionId: string, now: Date) {

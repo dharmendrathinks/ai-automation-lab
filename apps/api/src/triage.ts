@@ -20,11 +20,13 @@ function fixtureDecision(message: string, customerResolved: boolean): TriageDeci
 export async function claimEvent(db: Database, eventId: string, now: Date) {
   return db.transaction(async (tx) => {
     const [event] = await tx.select().from(outboxEvents).where(eq(outboxEvents.id, eventId));
-    if (!event) return null;
+    if (!event || event.eventType !== 'ticket.created') return null;
     const inserted = await tx.insert(workflowExecutions).values({ id: randomUUID(), runId: event.runId, eventId, workflowRevision: 'triage-decision-v1', attempt: event.attempts || 1, technicalStatus: 'claimed', startedAt: now }).onConflictDoNothing().returning({ id: workflowExecutions.id });
     if (inserted.length) {
       await tx.update(automationRuns).set({ phase: 'triage', claimedAt: now }).where(and(eq(automationRuns.id, event.runId), isNull(automationRuns.claimedAt)));
       await tx.insert(auditEvents).values({ id: randomUUID(), runId: event.runId, eventType: 'workflow.claimed', actor: 'n8n:triage-decision-v1', evidence: { eventId, workflowRevision: 'triage-decision-v1' }, createdAt: now });
+    } else {
+      await tx.insert(auditEvents).values({ id: randomUUID(), runId: event.runId, eventType: 'duplicate.event_suppressed', actor: 'backend:event-claim', evidence: { eventId }, createdAt: now });
     }
     return { eventId, runId: event.runId, duplicate: inserted.length === 0 };
   });

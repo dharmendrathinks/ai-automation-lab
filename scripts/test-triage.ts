@@ -21,9 +21,10 @@ try {
   const created = intake.json<{ runId: string; eventId: string }>();
   const delivered = await deliverPendingEvents(db, webhook, N8N_WEBHOOK_TOKEN);
   if (delivered.delivered !== 1) throw new Error(`outbox delivery failed: ${JSON.stringify(delivered)}`);
-  const run = (await app.inject({ url: `/api/v1/runs/${created.runId}`, headers })).json<{ phase: string; outcome: string; events: Array<{ payload: unknown }> }>();
+  const run = (await app.inject({ url: `/api/v1/runs/${created.runId}`, headers })).json<{ phase: string; outcome: string; events: Array<{ eventType: string; payload: unknown }> }>();
   if (run.phase !== 'completed' || run.outcome !== 'automatic_support') throw new Error(`unexpected triage outcome: ${JSON.stringify(run)}`);
-  const duplicate = await fetch(webhook, { method: 'POST', headers: { authorization: `Bearer ${N8N_WEBHOOK_TOKEN}`, 'content-type': 'application/json' }, body: JSON.stringify(run.events[0]?.payload) });
+  const ticketEvent = run.events.find((event) => event.eventType === 'ticket.created');
+  const duplicate = await fetch(webhook, { method: 'POST', headers: { authorization: `Bearer ${N8N_WEBHOOK_TOKEN}`, 'content-type': 'application/json' }, body: JSON.stringify(ticketEvent?.payload) });
   if (!duplicate.ok) throw new Error(`duplicate webhook failed: ${duplicate.status} ${await duplicate.text()}`);
   const counts = (await pool.query(`SELECT
     (SELECT count(*)::int FROM ai_jobs WHERE run_id=$1) ai_jobs,

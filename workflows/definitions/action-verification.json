@@ -26,7 +26,10 @@
       "name": "Execute Authorized Action",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [480, 0]
+      "position": [480, 0],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000
     },
     {
       "parameters": { "method": "POST", "url": "=http://host.docker.internal:3001/automation/v1/actions/{{$json.actionId}}/verify", "sendHeaders": true, "headerParameters": { "parameters": [{ "name": "Authorization", "value": "={{ $('Action Ready').item.json.headers.authorization }}" }] }, "options": {} },

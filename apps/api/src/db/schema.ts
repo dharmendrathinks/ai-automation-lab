@@ -91,3 +91,13 @@ export const refunds = pgTable('refunds', {
   amountMinor: integer('amount_minor').notNull(), currency: text().notNull(), status: text().notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
 });
+export const scenarioInstances = pgTable('scenario_instances', {
+  id: uuid().primaryKey(), runId: uuid('run_id').notNull().references(() => automationRuns.id).unique(),
+  fixtureId: text('fixture_id').notNull(), config: jsonb().$type<Record<string, unknown>>().notNull(),
+  counters: jsonb().$type<Record<string, number>>().notNull(), createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+});
+export const actionAttempts = pgTable('action_attempts', {
+  id: uuid().primaryKey(), actionId: uuid('action_id').notNull().references(() => proposedActions.id),
+  attempt: integer().notNull(), result: text().notNull(), evidence: jsonb().$type<Record<string, unknown>>().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+});

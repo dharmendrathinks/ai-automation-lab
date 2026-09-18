@@ -1,6 +1,6 @@
 # Local development
 
-Status: **milestone 4 complete**, **FIXTURE MODE**. Live inference remains
+Status: **milestone 5 complete**, **FIXTURE MODE**. Live inference remains
 disabled. The imported foundation workflow checks installation and networking;
 Workflow A performs deterministic triage and backend policy evaluation.
 
@@ -51,6 +51,7 @@ pnpm test:foundation
 pnpm test:triage
 pnpm test:support
 pnpm test:refund
+pnpm test:reliability
 ```
 
 `pnpm test:foundation` starts the API on loopback, runs the actual imported n8n
@@ -72,6 +73,10 @@ while `pnpm dev` is running to inspect a run timeline with the local operator to
 n8n credential, approves one exact synthetic proposal as the local reviewer, and
 requires independent read-back of the refund and payment totals before resolving
 the ticket.
+
+`pnpm test:reliability` runs the four persisted fault scenarios, including an n8n
+restart. It asserts actual refund/message state, retry receipts and verification
+outcomes so a successful workflow cannot hide a failed business outcome.
 
 For the exact planned baseline, keep the infrastructure running and use:
 

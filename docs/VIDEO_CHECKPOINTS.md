@@ -2,7 +2,44 @@
 
 Engineering/content handoff for [AI Automation Lab](../PLAN.md). Follow the [repository workflow and evidence rules](REPOSITORY_WORKFLOW.md).
 
-**No confirmed video checkpoints yet.** The Codex feasibility assessment is frozen; no live evaluation or qualifying video experiment has been completed. No video start/end tags have been created.
+Two deterministic reliability experiments are now reproducible. They demonstrate
+real application and n8n behavior in **FIXTURE MODE**, not live model behavior.
+
+## False success
+
+```text
+Experiment/question: What if an API reports success but the business mutation never occurred?
+Status: READY
+Mode: FIXTURE MODE
+Start tag: video-false-success-start
+End tag: video-false-success-end
+Engineering milestone: 5
+Demo scenario: false-success
+Command/setup: pnpm run setup; pnpm test:reliability
+Expected observable result: action call succeeds, no refund exists, verification fails
+Actual observed result: zero refunds; action and business outcome recorded failed
+Tests/evidence: docs/experiments/reliability-lab.md; scripts/test-reliability.ts
+Important limitation: deterministic injected billing behavior, not a real provider failure
+Possible video angle: Workflow success is not business success; verify the destination state.
+```
+
+## Lost response and idempotency
+
+```text
+Experiment/question: What if a refund commits and its response is lost before the workflow receives it?
+Status: READY
+Mode: FIXTURE MODE
+Start tag: video-lost-response-start
+End tag: video-lost-response-end
+Engineering milestone: 5
+Demo scenario: commit-lost-response
+Command/setup: pnpm run setup; pnpm test:reliability
+Expected observable result: retry reuses one key and exactly one refund exists
+Actual observed result: two attempts, one receipt, one refund, verified
+Tests/evidence: docs/experiments/reliability-lab.md; scripts/test-reliability.ts
+Important limitation: deterministic transport failure against the synthetic billing API
+Possible video angle: A lost response is an unknown outcome, not permission to repeat a financial action.
+```
 
 Prospective questions and qualification criteria are listed in the workflow guide. Add entries here only when a genuine experiment is being built. A completed engineering milestone does not automatically warrant a video.
 

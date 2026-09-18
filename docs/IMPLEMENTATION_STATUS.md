@@ -122,5 +122,33 @@ Actual evidence:
 Milestone 5 adds controlled failure, retry, recovery and unknown-outcome scenarios.
 No video is warranted yet.
 
+## Milestone 5 — complete
+
+Annotated tag: `milestone-5-reliability-lab`.
+
+Faults are explicit persisted scenario configuration with durable counters; ticket
+text cannot enable them. Action attempts distinguish failure before commit,
+committed response loss, false success, normal commit and idempotent replay.
+Unknown verification remains unknown until an explicit reconciliation read.
+
+Actual results from `pnpm test:reliability`:
+
+- Failure before commit: two attempts, one refund, verified.
+- Refund committed then response lost: two attempts, one operation receipt, one
+  refund, verified through idempotent replay.
+- Synthetic HTTP success without mutation: zero refunds and business outcome failed.
+- Verification unavailable: one refund and unknown outcome; after n8n restart,
+  reconciliation verified the same refund without another mutation.
+- Outcome metrics expose failures, retries, ever/current unknown outcomes,
+  recoveries and observed duplicate-prevention events.
+
+The evidence is recorded in [reliability experiments](experiments/reliability-lab.md).
+False-success and lost-response/idempotency are worthwhile video experiments;
+their start/end tags and reproducible evidence are recorded in
+[video checkpoints](VIDEO_CHECKPOINTS.md).
+
+Next: milestone 6 remains blocked by the frozen live Codex authentication gate.
+Milestones 7 and 8 remain executable in fixture mode.
+
 See [local development](guides/LOCAL_DEVELOPMENT.md) for reproduction commands,
 available endpoints and the current limitations.
