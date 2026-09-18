@@ -1,6 +1,6 @@
 # Implementation status
 
-Updated: 2026-09-13. Branch: `feat/automation-foundation`. All checkpoints are local.
+Updated: 2026-09-18. Branch: `feat/automation-foundation`. All checkpoints are local.
 
 ## Milestone 0 — complete
 
@@ -12,7 +12,9 @@ stopped before inference because isolated runtime authentication was absent:
 Development proceeds in **FIXTURE MODE**. This does not establish live provider
 feasibility or model quality. No video is warranted yet.
 
-## Milestone 1 — first backend slice tested, milestone incomplete
+## Milestone 1 — complete
+
+Annotated tag: `milestone-1-business-foundation`.
 
 Implemented:
 
@@ -21,26 +23,37 @@ Implemented:
 - Atomic ticket/run/audit/outbox creation; unresolved customers remain explicit.
 - Read-only mock customer, subscription, invoice and payment APIs.
 - A fresh PostgreSQL cluster for reproducible integration testing.
+- Digest-pinned native ARM64 PostgreSQL 18.6 and n8n 2.38.7 services.
+- Separate PostgreSQL bootstrap, RelayDesk and n8n users; application users are
+  not superusers and own separate databases.
+- Generated local-only secrets, persistent volumes, health checks and
+  loopback-only published ports.
+- Idempotent setup, migrations, seed and reviewed workflow import.
+- An inactive foundation workflow that reaches the loopback-bound host API
+  through `host.docker.internal` and observes `FIXTURE MODE`.
 
-Actual validation on Node 26.5.0 / macOS ARM64 / PostgreSQL 17.9:
+Actual validation on macOS ARM64 with Docker Engine 29.5.2 and Compose 5.5.1:
 
-- `pnpm test:integration`: **12 passed**.
-- `pnpm typecheck`: passed.
-- `pnpm build`: passed; migration and fixture assets included in build output.
+- Node **24.21.0** container: **17 tests passed**, typecheck passed and build passed.
+- PostgreSQL **18.6** container: **12 API integration tests passed**.
+- n8n **2.38.7**: repeated setup retained exactly one imported foundation
+  workflow; its real CLI execution completed successfully and read
+  `{ service: "relaydesk", mode: "FIXTURE MODE" }` from the host API.
+- Database roles confirmed `relaydesk` and `n8n` are not superusers.
 - Forced outbox insert failure: API returned `500`; persisted ticket, run, audit
   and outbox counts were each **0** after rollback.
 - Successful intake: each count was **1**, with a pending versioned event.
 - Cross-customer payment ownership and excessive refunded amounts were rejected
   by PostgreSQL constraints.
 
-These are deterministic backend tests, not model behavior or n8n executions.
-No n8n workflow was added or changed. There is no milestone 1 tag and no video
-checkpoint. No video is warranted yet.
+These are deterministic foundation checks, not model behavior. The connectivity
+workflow proves import/bootstrap and networking only; it is not Workflow A and
+does not deliver the ticket outbox event. No video checkpoint was created. No
+video is warranted yet.
 
-Next: complete the local Docker/PostgreSQL/n8n bootstrap, prove host networking
-and workflow import, and validate the planned Node 24 / PostgreSQL 18 baseline.
-Docker is not installed on this machine, so those checks have not run. Then
-continue with workflow A and `FixtureProvider` under the approved roadmap.
+Next: milestone 2 implements durable outbox delivery, Workflow A and the
+`FixtureProvider` decision path, including duplicate-event handling and recorded
+triage/escalation evidence.
 
 See [local development](guides/LOCAL_DEVELOPMENT.md) for reproduction commands,
 available endpoints and the current limitations.

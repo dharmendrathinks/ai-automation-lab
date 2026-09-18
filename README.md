@@ -10,9 +10,11 @@ continues in **FIXTURE MODE**. No live-AI evaluation is claimed.
 
 See the [actual spike result and limitations](docs/decisions/0001-codex-feasibility.md).
 
-The first RelayDesk backend slice now stores a ticket, automation run, audit entry
-and outbox event in one PostgreSQL transaction. Mock customer, subscription,
-invoice and payment reads are available. n8n delivery and the dashboard are pending.
+Milestone 1 is complete. RelayDesk stores a ticket, automation run, audit entry
+and outbox event in one PostgreSQL transaction. The pinned PostgreSQL 18.6 and
+n8n 2.38.7 services have reproducible local bootstrap, separate databases and
+credentials, and a reviewed connectivity workflow that proves n8n can reach the
+loopback-bound host API. Event delivery and Workflow A begin in milestone 2.
 
 ## Development
 
@@ -20,15 +22,19 @@ Use Node 24 LTS (the version in `.node-version`) and pnpm 10.30.1.
 
 ```sh
 pnpm install
+pnpm run doctor
+pnpm run setup
 pnpm test
 pnpm typecheck
 pnpm build
+pnpm test:foundation
 ```
 
 Tests use fake processes and synthetic inputs; they do not call a model.
 
-Run `pnpm test:integration` for the API tests against an isolated native PostgreSQL
-cluster. See [local setup, endpoints and current limitations](docs/guides/LOCAL_DEVELOPMENT.md).
+Run `pnpm test:baseline` to reproduce unit, type, build and database integration
+checks on Node 24.21.0 and the running PostgreSQL 18.6 container. See
+[local setup, endpoints and current limitations](docs/guides/LOCAL_DEVELOPMENT.md).
 
 ## Project guides
 

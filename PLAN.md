@@ -1001,8 +1001,8 @@ If that path does not reach loopback on the installed Docker configuration, use 
 ### Intended commands
 
 ```text
-pnpm doctor             Check versions, Docker, ports and provider readiness
-pnpm setup              Generate local secrets, migrate and seed
+pnpm run doctor         Check versions, Docker, ports and provider readiness
+pnpm run setup          Generate local secrets, migrate, seed and import workflows
 pnpm dev                Start infrastructure and apps in fixture mode
 pnpm dev:codex          Start with the validated Codex runtime
 pnpm workflows:import   Install reviewed workflow definitions
