@@ -11,10 +11,19 @@
     "build": "tsc -p tsconfig.json && node scripts/copy-assets.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:foundation": "tsx --env-file=.env scripts/test-foundation.ts",
+    "test:baseline": "sh scripts/test-baseline.sh",
+    "doctor": "tsx scripts/doctor.ts",
+    "setup": "tsx scripts/setup-local.ts",
+    "infra:up": "docker compose --env-file .env up -d --wait",
+    "infra:down": "docker compose --env-file .env down",
+    "dev": "docker compose --env-file .env up -d --wait && pnpm dev:api",
     "spike:codex": "tsx spikes/codex-feasibility/probe.ts",
     "test:integration": "tsx scripts/test-postgres.ts",
     "db:setup": "tsx --env-file=.env scripts/db-setup.ts",
-    "dev:api": "tsx --env-file=.env apps/api/src/server.ts"
+    "dev:api": "tsx --env-file=.env apps/api/src/server.ts",
+    "workflows:import": "docker compose --env-file .env exec -T n8n n8n import:workflow --separate --input=/workflows/definitions",
+    "workflows:list": "docker compose --env-file .env exec -T n8n n8n list:workflow"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",

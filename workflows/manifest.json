@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "workflows": [
+    {
+      "id": "relaydeskFoundation",
+      "name": "RelayDesk Foundation Connectivity",
+      "file": "definitions/foundation-connectivity.json",
+      "purpose": "Milestone 1 import and container-to-host networking proof",
+      "published": false
+    }
+  ]
+}

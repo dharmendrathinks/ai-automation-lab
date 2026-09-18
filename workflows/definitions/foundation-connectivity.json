@@ -1,0 +1,45 @@
+{
+  "id": "relaydeskFoundation",
+  "name": "RelayDesk Foundation Connectivity",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "c81f74ef-f6c4-45b8-9030-dfc7f5a98f29",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:3001/healthz",
+        "options": {}
+      },
+      "id": "9bb91af1-19ac-45bf-8dc2-33e068922096",
+      "name": "Read RelayDesk Health",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [240, 0]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{
+        "node": "Read RelayDesk Health",
+        "type": "main",
+        "index": 0
+      }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "20717546-8d48-4562-9440-985bf819f11d",
+  "tags": []
+}
