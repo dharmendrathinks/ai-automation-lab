@@ -35,3 +35,7 @@ without direct ticket handling. The amount of human time removed is not yet
 measured; only an explicitly synthetic estimate is available. Broader claims
 require matched manual observations and a larger resolved cohort.
 
+The clean-clone fixture rehearsal also ran the report after the full reliability
+suite. Its mixed four-ticket cohort correctly declined to claim removed human
+work because active-effort coverage was incomplete, while retaining three
+verified completions and one failed outcome in the denominator.

@@ -166,8 +166,12 @@ labeled synthetic/configurable manual-time baseline. Its current evidence and
 qualified answer are recorded in
 [outcome and effort report](experiments/outcome-effort-report.md).
 
-Release closeout still requires the clean-clone fixture setup/demos. Milestone 8
-remains next after that check.
+Clean-clone release rehearsal used fresh synthetic PostgreSQL/n8n volumes,
+imported all three reviewed workflows and passed foundation, verified-support
+and complete reliability demos without Codex credentials. The fixture report
+showed missing effort and cost evidence as N/A. Milestone 7 is complete.
+
+Next: milestone 8 persisted wait/resume exercise.
 
 See [local development](guides/LOCAL_DEVELOPMENT.md) for reproduction commands,
 available endpoints and the current limitations.
