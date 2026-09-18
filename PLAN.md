@@ -34,6 +34,8 @@ Unstructured request
 
 The first release succeeds when another developer can reproduce both a successful refund and a misleading “API success” that verification correctly identifies as a business failure.
 
+**Optimize for verified useful outcomes, not maximum automation.** A workflow that escalates correctly may be better than one that automates more but produces unreliable outcomes. Measure whether automation reduces human work alongside correctness and reliability, using the lightweight metrics in section N.
+
 ### Findings that affect the architecture
 
 | Assumption | Finding and consequence |
@@ -344,6 +346,8 @@ The result includes:
 - Provider request/session identifier when available.
 - Token usage when reported; otherwise absent.
 
+Retain duration and available usage metadata for failed/retried invocations too. Record provider-reported cost and currency only when available; missing usage or cost remains unknown, never an assumed zero. Derive any estimates separately using explicit, versioned assumptions (section N), without expanding the provider abstraction or reopening the feasibility spike.
+
 Normalize failures into:
 
 ```text
@@ -563,6 +567,8 @@ Add these incrementally with the milestone that needs them.
 - Defer orders and order items until an order-specific workflow exists.
 
 Audit events also store verification evidence; a separate verification table is unnecessary initially.
+
+For metrics, reuse these records and add only missing timestamps or concise metadata as each workflow arrives: ticket receipt/resolution, run mode and scenario, escalation reason, approval request/decision, attempts/recovery, duplicate prevention and provider usage. Record sampled active human effort as minutes with its measurement source in existing audit/scenario evidence; elapsed approval time alone cannot measure effort. Do not add analytics tables or services just to collect metrics.
 
 ## L. Directional APIs and event contracts
 
@@ -814,6 +820,31 @@ Use structured backend logs with correlation IDs. Dashboard metrics initially co
 
 Use n8n execution history for debugging, with explicit retention. Keep application audit history independently. n8n can prune execution data and configure progress/error retention. [Execution persistence settings](https://github.com/n8n-io/n8n-docs/blob/main/docs/deploy/host-n8n/configure-n8n/basic-configuration/use-environment-variables/executions.md)
 
+### Automation Economics & Outcome Metrics
+
+Compute small backend queries or a reproducible report from existing PostgreSQL state, timestamps, audit evidence and provider metadata. n8n remains the orchestrator; backend records and independent verification remain authoritative. Collect evidence from milestone 1 onward, but calculate each metric only when its workflow exists. No analytics infrastructure or separate dashboard view is required.
+
+Define a report cohort by ticket intake window or scenario batch, with an observation cutoff, workflow/policy version and sample size. Separate **FIXTURE MODE** from **LIVE AI MODE**, and break down support, refund and escalation scenarios. Count each logical ticket/action once across retries and n8n restarts; report attempts separately. Keep pending, partial, failed and unknown cases visible in denominators and show counts with rates. A zero denominator or missing evidence yields **N/A**, not zero.
+
+A successfully resolved ticket has all required actions and destination updates verified, no unresolved issues, and a recorded resolved state. A verified response proves simulated delivery, not customer satisfaction; a verified refund alone does not resolve a ticket with an account mismatch. Correct escalation/rejection is a useful routing/decision outcome, reported separately from verified resolution. Automation rate is not a target to maximize.
+
+| Metric | Definition / evidence | First meaningful milestone |
+|---|---|---|
+| Automation rate | Tickets successfully resolved without human intervention / all tickets in the declared cohort; approvals count as intervention. Show assisted resolutions separately. | **3**, fixture support workflow; **6** for live-AI claims |
+| Human escalation rate | Distinct tickets routed to human follow-up / cohort tickets, grouped by recorded reason; distinguish mandatory approval from escalation. | **2**, triage routing |
+| End-to-end handling time | Ticket receipt to verified resolution, including queues, retries and human waits; show median/p95 with sample count and unresolved ticket age separately. | **3**, support completion |
+| Verified completion rate | Successfully resolved tickets / cohort tickets; also show verified actions / attempted logical actions so partial tickets cannot masquerade as resolved. | **3**, support verification |
+| Human approval/review time | Approval request to decision is elapsed waiting/decision time; sampled active review minutes are a separate measure. Show pending approval age and approved/rejected/expired counts. | **4**, reviewer workflow |
+| Human minutes required per ticket | Total observed active handling, review, escalation and recovery minutes / cohort tickets, including work on unsuccessful cases. Report observation coverage; incomplete effort evidence gives only a labeled partial measure. | **3**, sampled support effort; **4** adds refund review |
+| Estimated human minutes saved per successfully resolved ticket | For matched resolved scenarios, mean(manual-only baseline minutes − observed automation-assisted human minutes). Label the baseline measured or synthetic/configurable, retain negative savings, and show cohort-wide effort too to expose failed/escalated work. | **3**, only with a matched baseline and effort evidence; **4** includes review |
+| Failure / retry / recovery rates | Failed logical actions / attempted actions; actions with repeated mutation attempts / attempted actions; actions subsequently verified / actions needing recovery. Keep delivery, provider and verification-read retries separate; count each recovered action once across restarts. | **5**, controlled reliability scenarios |
+| Unknown-outcome rate | Actions whose latest business outcome is unknown at cutoff / attempted actions; also count actions that ever became unknown and their later reconciliation outcomes. | **5**, uncertain-outcome scenarios |
+| Duplicate-prevention events | Count explicit duplicate-event claims, idempotent receipt replays and business-constraint blocks by kind; distinguish attempted duplicates from actual duplicate side effects. Do not infer prevention from a zero-duplicate total. | **2**, event deduplication; **5**, action/replay experiments |
+| Model/provider latency | Invocation start to termination per attempt, including failures; report queue time separately. Fixture adapter timing is not model latency. | **2**, fixture plumbing timing; **6**, live model/runtime timing |
+| Model/runtime cost; cost per successfully resolved ticket | Available provider usage/cost plus explicitly scoped runtime costs; total cohort costs, including failed/retried/escalated work, / successfully resolved tickets. Report cost coverage and components; unknown costs cannot produce a complete cost-per-resolution claim. | **6**, when live usage and a meaningful cost basis exist |
+
+Use synthetic business data only. Fixture timings/outcomes demonstrate system behavior, not live AI productivity. Any assumed manual effort baseline, labor rate, token price or runtime allocation must be explicitly labeled a **synthetic/configurable estimate**, with units, source/version and included/excluded components; keep estimates separate from observed effort and provider-reported costs. A measured manual baseline must use the same scenario and outcome requirement. Subscription allowance is not free inference or an attributable per-call dollar price. Never turn time estimates into claimed dollar savings without an explicit cost basis, and never fabricate unavailable costs.
+
 ## O. Testing and AI evaluation
 
 ### Test layers
@@ -875,6 +906,8 @@ Measure:
 - Provider and end-to-end latency.
 
 Do not score exact response wording or use the fixture provider to claim model accuracy.
+
+When the corresponding workflows exist, pair decision-quality evaluation with section N's outcome/effort report for the same scenario cohort. Use existing deterministic scenarios to check that retries/replays do not inflate ticket counts, partial/unknown outcomes are not resolved, waiting is not active effort, and missing/zero-denominator metrics remain N/A. Preserve failures and required escalations; do not select only successful runs to claim productivity gains.
 
 ### Initial acceptance gates
 
@@ -1042,6 +1075,7 @@ Include:
 - Recovery and debugging guide.
 - Provider contract.
 - Evaluation methodology.
+- A small reproducible outcome/effort report answering **“Did this automation actually remove human work while still producing verified outcomes?”** Include scenario/command, mode, cohort and cutoff, verified resolutions, escalations, human effort/baseline, reliability results and available cost coverage. State assumptions, missing evidence and limits; a fixture-only release must make no live-AI savings claim.
 - Security, licensing and cost notes.
 - Contribution guide and workflow-review checklist.
 
@@ -1058,13 +1092,13 @@ Maintain [Video checkpoints](docs/VIDEO_CHECKPOINTS.md) separately from engineer
 | Milestone | Runnable/testable result | Exit criteria |
 |---|---|---|
 | **0. One-time Codex gate** | Minimal Codex feasibility harness and a frozen decision record | Finish within one focused session, at most half a day; record pass/fail and limitations, then stop Codex experimentation |
-| **1. RelayDesk foundation** | Local PostgreSQL/n8n setup and API with customers, subscriptions, invoices, payments, tickets and deterministic seed data | Prove networking and workflow import/bootstrap; real PostgreSQL migrations and API tests; ticket creation produces durable outbox event |
-| **2. First orchestration** | Workflow A using `FixtureProvider` | Ticket event reaches n8n; classification/policy recorded; duplicate delivery creates no duplicate logical work |
-| **3. Verified support response** | Workflow B posts a canonical support response | Destination message read back and verified; timeline visible in a minimal UI |
-| **4. Approved refund** | Proposal, reviewer UI, refund API and verification | No approval means no refund; approval binds exact action; happy-path refund is verified |
-| **5. Reliability lab** | Lost-response, retries, false-success and restart scenarios | All requested failure scenarios pass; no duplicate refunds; unknown states reconcile safely |
-| **6. Wire in live AI and evaluate automation** | Frozen, validated Codex integration connected behind existing endpoints | Reuse the milestone 0 decision without a new Codex research phase; same workflows work unchanged; evaluate structured workflow decisions with 20 fixtures initially, then 100 |
-| **7. Teaching release** | Polished dashboard, docs and clean-clone setup | Contributor can run both success and failure demos without videos or model credentials |
+| **1. RelayDesk foundation** | Local PostgreSQL/n8n setup and API with customers, subscriptions, invoices, payments, tickets and deterministic seed data | Prove networking and workflow import/bootstrap; real PostgreSQL migrations and API tests; ticket creation produces durable outbox event; retain intake timestamps, mode and scenario/run correlation for later metrics |
+| **2. First orchestration** | Workflow A using `FixtureProvider` | Ticket event reaches n8n; classification/policy recorded; duplicate delivery creates no duplicate logical work; retain triage outcomes, escalation reasons, duplicate-prevention evidence and provider timing |
+| **3. Verified support response** | Workflow B posts a canonical support response | Destination message read back and verified; timeline visible in a minimal UI; report fixture handling/completion and automation rates, plus sampled human effort and matched-baseline savings when evidence exists |
+| **4. Approved refund** | Proposal, reviewer UI, refund API and verification | No approval means no refund; approval binds exact action; happy-path refund is verified; measure approval elapsed time and sampled active review effort separately |
+| **5. Reliability lab** | Lost-response, retries, false-success and restart scenarios | All requested failure scenarios pass; no duplicate refunds; unknown states reconcile safely; report failure/retry/recovery, unknown outcomes and duplicate prevention without double-counting logical work |
+| **6. Wire in live AI and evaluate automation** | Frozen, validated Codex integration connected behind existing endpoints | Reuse the milestone 0 decision without a new Codex research phase; same workflows work unchanged; evaluate structured workflow decisions with 20 fixtures initially, then 100; report live automation/outcome rates, model latency, available usage/cost and cost per resolution only where meaningful |
+| **7. Teaching release** | Polished dashboard, docs and clean-clone setup | Contributor can run both success and failure demos without videos or model credentials; reproduce the small outcome/effort report in section R with explicit mode, assumptions and limitations |
 | **8. Wait/resume exercise** | Native n8n persisted-wait scenario | Callback race, duplicate callback and restart behavior are documented and tested |
 
 If milestone 0’s Codex security or account-use gate fails, milestones 1–5 and 7 remain executable in fixture mode. No paid provider is silently substituted.
