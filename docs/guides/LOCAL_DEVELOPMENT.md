@@ -116,6 +116,14 @@ LAB_SYNTHETIC_MANUAL_SUPPORT_MINUTES=5 pnpm report:outcomes
 That value is configurable and synthetic. It is not measured labor and is never
 converted into dollar savings.
 
+## Persisted wait/resume exercise
+
+Run `pnpm test:wait-resume` after setup. The isolated teaching workflow proves
+early approval recovery, retry after a callback races restart recovery,
+concurrent/duplicate callbacks, expiry and completion after an n8n restart. The
+backend approval record remains authoritative; possession of a resume callback
+never authorizes a business action.
+
 For the exact planned baseline, keep the infrastructure running and use:
 
 ```sh

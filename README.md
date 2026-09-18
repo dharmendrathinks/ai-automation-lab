@@ -48,6 +48,7 @@ pnpm test:triage
 pnpm test:support
 pnpm test:refund
 pnpm test:reliability
+pnpm test:wait-resume
 pnpm report:outcomes
 ```
 

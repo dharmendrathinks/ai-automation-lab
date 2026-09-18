@@ -4,12 +4,13 @@ import { asc, desc, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { createTicketSchema } from '../../../packages/contracts/src/tickets.js';
 import type { Database } from './db/index.js';
-import { approvals, auditEvents, automationRuns, customers, invoices, outboxEvents, payments, proposedActions, refunds, scenarioInstances, subscriptions, ticketMessages, tickets } from './db/schema.js';
+import { approvals, auditEvents, automationRuns, customers, invoices, outboxEvents, payments, proposedActions, refunds, scenarioInstances, subscriptions, ticketMessages, tickets, waitExercises } from './db/schema.js';
 import { createTicket } from './tickets.js';
 import { claimEvent, classifyRun, evaluateTriagePolicy } from './triage.js';
 import { claimAction, decideApproval, executeAction, executeSupportResponse, verifyAction, verifySupportResponse } from './actions.js';
 import { FixtureProvider } from './providers.js';
 import type { AIProvider } from './providers.js';
+import { approveWaitExercise, completeWait, createWaitExercise, registerWait, resumeWait } from './waits.js';
 
 export function buildApp({ db, token, n8nToken, provider = new FixtureProvider(), now = () => new Date() }: { db: Database; token: string; n8nToken?: string; provider?: AIProvider; now?: () => Date }) {
   if (token.length < 32) throw new Error('LAB_OPERATOR_TOKEN must contain at least 32 characters.');
@@ -121,6 +122,34 @@ export function buildApp({ db, token, n8nToken, provider = new FixtureProvider()
     return await verifyAction(db, request.params.id, now()) ?? reply.code(404).send({ error: 'not_found' });
   });
   app.get('/api/v1/approvals', async () => ({ approvals: await db.select().from(approvals).orderBy(desc(approvals.requestedAt)) }));
+  app.post<{ Body: unknown }>('/api/v1/wait-exercises', async (request, reply) => {
+    const input = z.strictObject({ expiresInSeconds: z.number().int().min(1).max(3600).default(300) }).safeParse(request.body ?? {});
+    if (!input.success) return reply.code(400).send({ error: 'invalid_request' });
+    return reply.code(201).send(await createWaitExercise(db, now(), input.data.expiresInSeconds));
+  });
+  app.get<{ Params: { id: string } }>('/api/v1/wait-exercises/:id', async (request, reply) => {
+    if (!z.uuid().safeParse(request.params.id).success) return reply.code(400).send({ error: 'invalid_request' });
+    const [exercise] = await db.select().from(waitExercises).where(eq(waitExercises.id, request.params.id));
+    return exercise ? { ...exercise, resumeUrl: undefined } : reply.code(404).send({ error: 'not_found' });
+  });
+  app.post<{ Params: { id: string } }>('/api/v1/wait-exercises/:id/approve', async (request, reply) => {
+    if (!z.uuid().safeParse(request.params.id).success) return reply.code(400).send({ error: 'invalid_request' });
+    return await approveWaitExercise(db, request.params.id, now()) ?? reply.code(404).send({ error: 'not_found' });
+  });
+  app.post<{ Params: { id: string } }>('/api/v1/wait-exercises/:id/resume', async (request, reply) => {
+    if (!z.uuid().safeParse(request.params.id).success) return reply.code(400).send({ error: 'invalid_request' });
+    return await resumeWait(db, request.params.id, now()) ?? reply.code(404).send({ error: 'not_found' });
+  });
+  app.post<{ Params: { id: string }; Body: unknown }>('/automation/v1/waits/:id/register', async (request, reply) => {
+    if (!z.uuid().safeParse(request.params.id).success) return reply.code(400).send({ error: 'invalid_request' });
+    const input = z.strictObject({ resumeUrl: z.url() }).safeParse(request.body);
+    if (!input.success) return reply.code(400).send({ error: 'invalid_request' });
+    return await registerWait(db, request.params.id, input.data.resumeUrl, now()) ?? reply.code(404).send({ error: 'not_found' });
+  });
+  app.post<{ Params: { id: string } }>('/automation/v1/waits/:id/complete', async (request, reply) => {
+    if (!z.uuid().safeParse(request.params.id).success) return reply.code(400).send({ error: 'invalid_request' });
+    return await completeWait(db, request.params.id, now()) ?? reply.code(404).send({ error: 'not_found' });
+  });
   app.post<{ Params: { id: string }; Body: unknown }>('/api/v1/approvals/:id/decision', async (request, reply) => {
     if (!z.uuid().safeParse(request.params.id).success) return reply.code(400).send({ error: 'invalid_request' });
     const input = z.strictObject({ decision: z.enum(['approved', 'rejected']), reason: z.string().trim().min(1).max(500) }).safeParse(request.body);

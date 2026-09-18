@@ -101,3 +101,11 @@ export const actionAttempts = pgTable('action_attempts', {
   attempt: integer().notNull(), result: text().notNull(), evidence: jsonb().$type<Record<string, unknown>>().notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
 });
+export const waitExercises = pgTable('wait_exercises', {
+  id: uuid().primaryKey(), status: text().notNull(), resumeUrl: text('resume_url'),
+  callbackAttempts: integer('callback_attempts').notNull().default(0),
+  approvedAt: timestamp('approved_at', { withTimezone: true }),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+});

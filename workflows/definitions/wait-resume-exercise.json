@@ -1,0 +1,76 @@
+{
+  "id": "relaydeskWaitResume",
+  "name": "RelayDesk Persisted Wait Resume",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "relaydesk-wait-start", "responseMode": "onReceived", "options": {} },
+      "id": "85d35398-66a4-44e9-9720-320b56dcd232",
+      "name": "Start Wait Exercise",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [0, 0],
+      "webhookId": "relaydesk-wait-start"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://host.docker.internal:3001/automation/v1/waits/{{$('Start Wait Exercise').item.json.body.exerciseId}}/register",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Authorization", "value": "={{ $('Start Wait Exercise').item.json.headers.authorization }}" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { resumeUrl: $execution.resumeUrl } }}",
+        "options": {}
+      },
+      "id": "6fc9b7f5-7a7b-463f-8b3d-dc9c2bf49f27",
+      "name": "Register Hidden Resume URL",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [240, 0]
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "httpMethod": "POST",
+        "responseMode": "onReceived",
+        "limitWaitTime": true,
+        "limitType": "afterTimeInterval",
+        "resumeAmount": 10,
+        "resumeUnit": "minutes",
+        "options": {}
+      },
+      "id": "e85dc315-b4bc-4ee8-a593-df868a92e15e",
+      "name": "Persisted Approval Wait",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [480, 0],
+      "webhookId": "relaydesk-wait-resume"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://host.docker.internal:3001/automation/v1/waits/{{$('Register Hidden Resume URL').item.json.exerciseId}}/complete",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Authorization", "value": "={{ $('Start Wait Exercise').item.json.headers.authorization }}" }] },
+        "options": {}
+      },
+      "id": "e5cf0b60-49ac-46e2-8c21-18cff2a20e4d",
+      "name": "Verify Approval And Complete",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 0]
+    }
+  ],
+  "connections": {
+    "Start Wait Exercise": { "main": [[{ "node": "Register Hidden Resume URL", "type": "main", "index": 0 }]] },
+    "Register Hidden Resume URL": { "main": [[{ "node": "Persisted Approval Wait", "type": "main", "index": 0 }]] },
+    "Persisted Approval Wait": { "main": [[{ "node": "Verify Approval And Complete", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "staticData": null,
+  "meta": { "templateCredsSetupCompleted": true },
+  "pinData": {},
+  "versionId": "f3576e84-e364-40ad-af49-b66be51050ca",
+  "tags": []
+}

@@ -171,7 +171,14 @@ imported all three reviewed workflows and passed foundation, verified-support
 and complete reliability demos without Codex credentials. The fixture report
 showed missing effort and cost evidence as N/A. Milestone 7 is complete.
 
-Next: milestone 8 persisted wait/resume exercise.
+Milestone 8 adds an isolated native n8n webhook Wait exercise backed by the
+existing PostgreSQL service. It passed approval-before-wait recovery, restart
+while persisted, callback retry/race, duplicate replay and expiry scenarios.
+The authenticated backend hides the resume URL and re-checks approval before
+completion. Evidence is recorded in
+[wait/resume experiment](experiments/wait-resume.md).
+
+All eight engineering milestones are complete.
 
 See [local development](guides/LOCAL_DEVELOPMENT.md) for reproduction commands,
 available endpoints and the current limitations.

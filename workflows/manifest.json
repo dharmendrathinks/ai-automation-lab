@@ -21,6 +21,13 @@
       "file": "definitions/action-verification.json",
       "purpose": "Milestone 3 canonical support response and independent verification",
       "published": true
+    },
+    {
+      "id": "relaydeskWaitResume",
+      "name": "RelayDesk Persisted Wait Resume",
+      "file": "definitions/wait-resume-exercise.json",
+      "purpose": "Milestone 8 native database-backed wait/restart/resume exercise",
+      "published": true
     }
   ]
 }

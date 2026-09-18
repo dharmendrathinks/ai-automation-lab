@@ -18,6 +18,7 @@
     "test:live-support": "LAB_AI_MODE=live tsx --env-file=.env scripts/test-support-response.ts",
     "test:refund": "tsx --env-file=.env scripts/test-approved-refund.ts",
     "test:reliability": "tsx --env-file=.env scripts/test-reliability.ts",
+    "test:wait-resume": "tsx --env-file=.env scripts/test-wait-resume.ts",
     "test:baseline": "sh scripts/test-baseline.sh",
     "doctor": "tsx scripts/doctor.ts",
     "setup": "tsx scripts/setup-local.ts",
@@ -31,7 +32,7 @@
     "db:setup": "tsx --env-file=.env scripts/db-setup.ts",
     "dev:api": "tsx --env-file=.env apps/api/src/server.ts",
     "worker:outbox": "tsx --env-file=.env scripts/outbox-worker.ts",
-    "workflows:import": "docker compose --env-file .env exec -T n8n n8n import:workflow --separate --input=/workflows/definitions && docker compose --env-file .env exec -T n8n n8n publish:workflow --id=relaydeskTriage && docker compose --env-file .env exec -T n8n n8n publish:workflow --id=relaydeskAction",
+    "workflows:import": "docker compose --env-file .env exec -T n8n n8n import:workflow --separate --input=/workflows/definitions && docker compose --env-file .env exec -T n8n n8n publish:workflow --id=relaydeskTriage && docker compose --env-file .env exec -T n8n n8n publish:workflow --id=relaydeskAction && docker compose --env-file .env exec -T n8n n8n publish:workflow --id=relaydeskWaitResume",
     "workflows:list": "docker compose --env-file .env exec -T n8n n8n list:workflow"
   },
   "dependencies": {
