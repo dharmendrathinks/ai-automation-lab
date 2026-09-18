@@ -153,11 +153,13 @@ schema-valid `gpt-5.6-terra` decisions, and the provider-neutral backend path pl
 20/100-call evaluation tooling are implemented. The 100-call live cohort reached
 90% exact matches and 100% outcome-equivalent routing; cost remains unknown.
 
-Milestone 6 is not complete: Docker/n8n is unavailable on the current host, so
-the changed workflow has not passed fixture and live end-to-end acceptance, and
-the remaining isolation/cancellation checks must be closed before enabling or
-tagging the milestone. Milestones 7 and 8 remain executable in fixture mode once
-their infrastructure-dependent tests can run.
+Colima supplied the local Docker runtime. The provider-neutral n8n workflow passed
+in both fixture and live modes, and the live support path completed independent
+read-back verification. Adversarial canary/write checks, cancellation, timeout,
+process cleanup and provider-failure normalization passed. Milestone 6 is ready
+for closeout; fixture mode remains the default and live mode remains explicit.
+
+Next: milestone 7 teaching-release polish and reproducible outcome report.
 
 See [local development](guides/LOCAL_DEVELOPMENT.md) for reproduction commands,
 available endpoints and the current limitations.

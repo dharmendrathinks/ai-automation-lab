@@ -3,11 +3,15 @@ import { connect } from '../apps/api/src/db/index.js';
 import { deliverPendingEvents } from '../apps/api/src/outbox.js';
 import { migrate } from '../apps/api/src/db/migrate.js';
 import { seed } from '../apps/api/src/db/seed.js';
+import { CodexProvider, FixtureProvider } from '../apps/api/src/providers.js';
+import { resolve } from 'node:path';
 
-const { DATABASE_URL, LAB_OPERATOR_TOKEN, N8N_WEBHOOK_TOKEN } = process.env;
+const { DATABASE_URL, LAB_OPERATOR_TOKEN, N8N_WEBHOOK_TOKEN, LAB_AI_MODE, LAB_CODEX_BIN, LAB_CODEX_HOME } = process.env;
 if (!DATABASE_URL || !LAB_OPERATOR_TOKEN || !N8N_WEBHOOK_TOKEN) throw new Error('Run after pnpm run setup');
+if (LAB_AI_MODE === 'live' && !LAB_CODEX_BIN) throw new Error('LAB_CODEX_BIN is required in live mode');
+const provider = LAB_AI_MODE === 'live' ? new CodexProvider(LAB_CODEX_BIN!, resolve(LAB_CODEX_HOME ?? '.local/codex-runtime')) : new FixtureProvider();
 const { db, pool } = connect(DATABASE_URL);
-const app = buildApp({ db, token: LAB_OPERATOR_TOKEN, n8nToken: N8N_WEBHOOK_TOKEN });
+const app = buildApp({ db, token: LAB_OPERATOR_TOKEN, n8nToken: N8N_WEBHOOK_TOKEN, provider });
 const headers = { authorization: `Bearer ${LAB_OPERATOR_TOKEN}` };
 const webhook = 'http://127.0.0.1:5678/webhook/relaydesk-triage';
 
@@ -36,7 +40,7 @@ try {
   await deliverPendingEvents(db, webhook, N8N_WEBHOOK_TOKEN);
   const escalated = (await app.inject({ url: `/api/v1/runs/${missingRunId}`, headers })).json<{ outcome: string; escalationReason: string }>();
   if (escalated.outcome !== 'human_follow_up' || escalated.escalationReason !== 'customer_identity') throw new Error(`required escalation missing: ${JSON.stringify(escalated)}`);
-  console.log('Workflow A delivered, classified, applied policy, escalated safely, and suppressed duplicate logical work.');
+  console.log(`Workflow A delivered, classified, applied policy, escalated safely, and suppressed duplicate logical work — ${provider.mode}.`);
 } finally {
   await app.close();
   await pool.end();

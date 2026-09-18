@@ -7,6 +7,7 @@ import { CodexProvider, FixtureProvider } from './providers.js';
 
 const success = fileURLToPath(new URL('./fake-codex-success.sh', import.meta.url));
 const tool = fileURLToPath(new URL('./fake-codex-tool.sh', import.meta.url));
+const hang = fileURLToPath(new URL('./fake-codex-hang.sh', import.meta.url));
 const homes: string[] = [];
 const context = { ticket: { id: 'TICKET-001', customerRef: 'CUSTOMER-001', message: 'Where can I download invoices?' }, customerResolved: true, payments: [] };
 
@@ -28,5 +29,13 @@ describe('AI providers', () => {
   it('rejects any observed tool activity', async () => {
     await chmod(tool, 0o755);
     await expect(new CodexProvider(tool, await home()).classify(context)).rejects.toThrow('security_violation');
+  });
+
+  it('supports cancellation without waiting for the invocation deadline', async () => {
+    await chmod(hang, 0o755);
+    const controller = new AbortController();
+    const result = new CodexProvider(hang, await home(), { timeoutMs: 2_000, killGraceMs: 50 }).classify(context, controller.signal);
+    setTimeout(() => controller.abort(), 50);
+    await expect(result).rejects.toThrow('cancelled');
   });
 });

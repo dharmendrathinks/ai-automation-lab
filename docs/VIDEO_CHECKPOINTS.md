@@ -5,6 +5,24 @@ Engineering/content handoff for [AI Automation Lab](../PLAN.md). Follow the [rep
 Two deterministic reliability experiments are now reproducible. They demonstrate
 real application and n8n behavior in **FIXTURE MODE**, not live model behavior.
 
+## Controlled live automation evaluation
+
+```text
+Experiment/question: Can a live model classify requests while backend policy and verification retain control?
+Status: READY
+Mode: LIVE AI MODE
+Start tag: not created
+End tag: video-live-ai-evaluation-end
+Engineering milestone: 6
+Demo scenario: 20-case then 100-call triage evaluation plus verified invoice response
+Command/setup: pnpm evaluate:live-ai -- 20; pnpm evaluate:live-ai -- 100; pnpm test:live-support
+Expected observable result: schema-valid decisions, safe escalation, no tool activity, verified supported outcome
+Actual observed result: 90/100 exact matches, 100/100 outcome-equivalent routing, one live verified resolution
+Tests/evidence: docs/experiments/live-ai-evaluation.md; scripts/evaluate-live-ai.ts
+Important limitation: repeated 20-case cohort, one end-to-end resolved ticket, provider monetary cost unavailable
+Possible video angle: Optimize for verified useful outcomes, not maximum automation or exact model labels.
+```
+
 ## False success
 
 ```text

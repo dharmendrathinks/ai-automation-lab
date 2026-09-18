@@ -45,7 +45,7 @@ export async function classifyRun(db: Database, runId: string, now: Date, provid
       return { runId, decision: result.decision, reused: false };
     });
   } catch (error) {
-    const code = error instanceof Error && ['authentication_required', 'provider_unavailable', 'provider_timeout', 'provider_output_limit', 'security_violation', 'invalid_output'].includes(error.message) ? error.message : 'provider_unavailable';
+    const code = error instanceof Error && ['authentication_required', 'provider_unavailable', 'provider_timeout', 'provider_output_limit', 'provider_queue_full', 'cancelled', 'security_violation', 'invalid_output'].includes(error.message) ? error.message : 'provider_unavailable';
     const durationMs = Math.max(0, Math.round(performance.now() - started));
     await db.transaction(async (tx) => {
       const inserted = await tx.insert(aiJobs).values({ id: randomUUID(), runId, task: 'triage', provider: provider.provider, model: provider.model, status: 'failed', errorCode: code, durationMs, createdAt: now, completedAt: now }).onConflictDoNothing().returning({ id: aiJobs.id });

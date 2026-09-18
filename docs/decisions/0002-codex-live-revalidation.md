@@ -2,7 +2,7 @@
 
 Date: 2026-09-18
 
-Status: **IN PROGRESS — backend live path validated; n8n end-to-end pending**
+Status: **GO — bounded live runtime approved for explicit local opt-in**
 
 Milestone 6 supplied the concrete integration need allowed by decision 0001. The
 dedicated `.local/codex-runtime` was authenticated through the official ChatGPT
@@ -24,8 +24,13 @@ fallback.
 The 20-case and 100-call live evaluations are recorded in
 [live AI evaluation](../experiments/live-ai-evaluation.md). They establish model
 access, repeated non-interactive execution, structured output, usage reporting
-and rejection of tool activity. Docker/n8n is not installed on the current host,
-so the provider-neutral workflow has not yet been exercised end to end in live
-mode. Do not mark or tag Milestone 6 complete until that criterion and the final
-provider isolation tests pass.
+and rejection of tool activity. A hostile synthetic ticket could not disclose or
+alter a random canary, create a marker file, or trigger an observed tool event.
+Fake-process tests cover timeout, cancellation, descendant cleanup, malformed
+output, authentication, quota, rate-limit and unavailable-provider failures.
 
+Using Colima, the same imported n8n workflow passed in fixture and live modes.
+The live support path recorded policy, posted the canonical response, read it
+back independently and marked the ticket resolved with a verified action. The
+runtime is therefore approved behind explicit `LAB_AI_MODE=live`; fixture mode
+remains the default.

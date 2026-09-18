@@ -3,11 +3,15 @@ import { connect } from '../apps/api/src/db/index.js';
 import { migrate } from '../apps/api/src/db/migrate.js';
 import { seed } from '../apps/api/src/db/seed.js';
 import { deliverPendingEvents } from '../apps/api/src/outbox.js';
+import { CodexProvider, FixtureProvider } from '../apps/api/src/providers.js';
+import { resolve } from 'node:path';
 
-const { DATABASE_URL, LAB_OPERATOR_TOKEN, N8N_WEBHOOK_TOKEN } = process.env;
+const { DATABASE_URL, LAB_OPERATOR_TOKEN, N8N_WEBHOOK_TOKEN, LAB_AI_MODE, LAB_CODEX_BIN, LAB_CODEX_HOME } = process.env;
 if (!DATABASE_URL || !LAB_OPERATOR_TOKEN || !N8N_WEBHOOK_TOKEN) throw new Error('Run after pnpm run setup');
+if (LAB_AI_MODE === 'live' && !LAB_CODEX_BIN) throw new Error('LAB_CODEX_BIN is required in live mode');
+const provider = LAB_AI_MODE === 'live' ? new CodexProvider(LAB_CODEX_BIN!, resolve(LAB_CODEX_HOME ?? '.local/codex-runtime')) : new FixtureProvider();
 const { db, pool } = connect(DATABASE_URL);
-const app = buildApp({ db, token: LAB_OPERATOR_TOKEN, n8nToken: N8N_WEBHOOK_TOKEN });
+const app = buildApp({ db, token: LAB_OPERATOR_TOKEN, n8nToken: N8N_WEBHOOK_TOKEN, provider });
 const headers = { authorization: `Bearer ${LAB_OPERATOR_TOKEN}` };
 const webhooks = { 'ticket.created': 'http://127.0.0.1:5678/webhook/relaydesk-triage', 'action.ready': 'http://127.0.0.1:5678/webhook/relaydesk-action' };
 try {
@@ -25,5 +29,7 @@ try {
   await deliverPendingEvents(db, webhooks, N8N_WEBHOOK_TOKEN);
   const counts = (await pool.query('SELECT (SELECT count(*)::int FROM ticket_messages) messages, (SELECT count(*)::int FROM operation_receipts) receipts')).rows[0];
   if (counts.messages !== 1 || counts.receipts !== 1) throw new Error(`support action duplicated: ${JSON.stringify(counts)}`);
-  console.log('Workflow B stored one canonical response, read it back independently, and resolved the ticket as verified.');
+  const metrics = (await app.inject({ url: '/api/v1/metrics/outcomes', headers })).json<{ mode: string; automationRate: number; verifiedCompletionRate: number }>();
+  if (metrics.mode !== provider.mode || metrics.automationRate !== 1 || metrics.verifiedCompletionRate !== 1) throw new Error(`outcome metrics failed: ${JSON.stringify(metrics)}`);
+  console.log(`Workflow B stored one canonical response, read it back independently, and resolved the ticket as verified — ${provider.mode}.`);
 } finally { await app.close(); await pool.end(); }

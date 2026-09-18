@@ -25,7 +25,7 @@ export interface AIProvider {
   readonly mode: 'FIXTURE MODE' | 'LIVE AI MODE';
   readonly provider: 'fixture' | 'codex';
   readonly model: string;
-  classify(context: TriageContext): Promise<ProviderResult>;
+  classify(context: TriageContext, signal?: AbortSignal): Promise<ProviderResult>;
 }
 
 function fixtureDecision(message: string, customerResolved: boolean): TriageDecision {
@@ -54,11 +54,29 @@ export class CodexProvider implements AIProvider {
   readonly mode = 'LIVE AI MODE' as const;
   readonly provider = 'codex' as const;
   readonly model = 'gpt-5.6-terra';
-  constructor(private readonly executable: string, private readonly codexHome: string) {
+  private serial: Promise<void> = Promise.resolve();
+  private pending = 0;
+  constructor(private readonly executable: string, private readonly codexHome: string, private readonly limits = { timeoutMs: 180_000, killGraceMs: 5_000 }) {
     if (!isAbsolute(executable) || !isAbsolute(codexHome)) throw new Error('Live Codex paths must be absolute.');
   }
 
-  async classify(context: TriageContext): Promise<ProviderResult> {
+  async classify(context: TriageContext, signal?: AbortSignal): Promise<ProviderResult> {
+    if (signal?.aborted) throw new Error('cancelled');
+    if (this.pending >= 20) throw new Error('provider_queue_full');
+    this.pending += 1;
+    const previous = this.serial;
+    let release = () => {};
+    this.serial = new Promise<void>((resolve) => { release = resolve; });
+    await previous;
+    this.pending -= 1;
+    try {
+      return await this.invoke(context, signal);
+    } finally {
+      release();
+    }
+  }
+
+  private async invoke(context: TriageContext, signal?: AbortSignal): Promise<ProviderResult> {
     const cwd = await mkdtemp(join(tmpdir(), 'relaydesk-codex-'));
     const schemaPath = join(cwd, 'triage.schema.json');
     await writeFile(schemaPath, JSON.stringify(z.toJSONSchema(triageDecisionSchema)));
@@ -76,15 +94,28 @@ export class CodexProvider implements AIProvider {
     try {
       const result = await new Promise<{ text: string; usage: ProviderResult['usage'] }>((resolve, reject) => {
         const child = spawn(this.executable, args, { cwd, env, shell: false, detached: true, stdio: ['pipe', 'pipe', 'pipe'] });
-        let stdout = '', stderr = '', bytes = 0, timer: NodeJS.Timeout;
-        const stop = (error: Error) => { if (child.pid) { try { process.kill(-child.pid, 'SIGKILL'); } catch {} } reject(error); };
-        timer = setTimeout(() => stop(new Error('provider_timeout')), 180_000);
+        let stdout = '', stderr = '', bytes = 0, settled = false;
+        let forceTimer: NodeJS.Timeout | undefined;
+        const stop = (error: Error) => {
+          if (settled) return;
+          settled = true;
+          if (child.pid) {
+            try { process.kill(-child.pid, 'SIGTERM'); } catch {}
+            forceTimer = setTimeout(() => { try { process.kill(-child.pid!, 'SIGKILL'); } catch {} }, this.limits.killGraceMs);
+          }
+          reject(error);
+        };
+        const abort = () => stop(new Error('cancelled'));
+        const timer = setTimeout(() => stop(new Error('provider_timeout')), this.limits.timeoutMs);
+        signal?.addEventListener('abort', abort, { once: true });
         child.stdout.setEncoding('utf8'); child.stderr.setEncoding('utf8');
         child.stdout.on('data', (chunk: string) => { bytes += Buffer.byteLength(chunk); if (bytes > 1024 * 1024) stop(new Error('provider_output_limit')); else stdout += chunk; });
         child.stderr.on('data', (chunk: string) => { bytes += Buffer.byteLength(chunk); if (bytes > 1024 * 1024) stop(new Error('provider_output_limit')); else stderr += chunk; });
         child.on('error', () => stop(new Error('provider_unavailable')));
         child.on('close', (code) => {
-          clearTimeout(timer);
+          clearTimeout(timer); clearTimeout(forceTimer); signal?.removeEventListener('abort', abort);
+          if (settled) return;
+          settled = true;
           if (code !== 0) return reject(new Error(/not logged in|authentication|unauthorized|401/i.test(stderr) ? 'authentication_required' : 'provider_unavailable'));
           let text: string | undefined; let usage: ProviderResult['usage'] = null;
           for (const line of stdout.split('\n').filter(Boolean)) {
