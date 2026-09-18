@@ -159,7 +159,15 @@ read-back verification. Adversarial canary/write checks, cancellation, timeout,
 process cleanup and provider-failure normalization passed. Milestone 6 is ready
 for closeout; fixture mode remains the default and live mode remains explicit.
 
-Next: milestone 7 teaching-release polish and reproducible outcome report.
+Milestone 7 adds a clearer evidence dashboard, fixture-first documentation and a
+database-backed `pnpm report:outcomes` command. The report separates provider
+modes, keeps missing cost/effort evidence as N/A and permits only an explicitly
+labeled synthetic/configurable manual-time baseline. Its current evidence and
+qualified answer are recorded in
+[outcome and effort report](experiments/outcome-effort-report.md).
+
+Release closeout still requires the clean-clone fixture setup/demos. Milestone 8
+remains next after that check.
 
 See [local development](guides/LOCAL_DEVELOPMENT.md) for reproduction commands,
 available endpoints and the current limitations.

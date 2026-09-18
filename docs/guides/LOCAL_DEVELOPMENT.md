@@ -93,6 +93,29 @@ the developer Codex home or place credentials in `.env`. Run the fixed live
 evaluation with `pnpm evaluate:live-ai -- 20` and then `-- 100`; monetary cost is
 reported only if the provider supplies it.
 
+## Outcome and effort report
+
+After any workflow demo, run:
+
+```sh
+pnpm report:outcomes
+```
+
+The report groups fixture and live jobs separately and derives automation,
+escalation, verified completion, handling time, provider latency and available
+usage from existing PostgreSQL records. Missing active-human-effort or monetary
+cost evidence is `null`/N/A.
+
+For a clearly labeled teaching experiment, an operator may supply a synthetic
+manual baseline:
+
+```sh
+LAB_SYNTHETIC_MANUAL_SUPPORT_MINUTES=5 pnpm report:outcomes
+```
+
+That value is configurable and synthetic. It is not measured labor and is never
+converted into dollar savings.
+
 For the exact planned baseline, keep the infrastructure running and use:
 
 ```sh

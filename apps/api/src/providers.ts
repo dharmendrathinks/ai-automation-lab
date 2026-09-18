@@ -109,6 +109,7 @@ export class CodexProvider implements AIProvider {
         const timer = setTimeout(() => stop(new Error('provider_timeout')), this.limits.timeoutMs);
         signal?.addEventListener('abort', abort, { once: true });
         child.stdout.setEncoding('utf8'); child.stderr.setEncoding('utf8');
+        child.stdin.on('error', () => { /* A child may exit before consuming stdin. */ });
         child.stdout.on('data', (chunk: string) => { bytes += Buffer.byteLength(chunk); if (bytes > 1024 * 1024) stop(new Error('provider_output_limit')); else stdout += chunk; });
         child.stderr.on('data', (chunk: string) => { bytes += Buffer.byteLength(chunk); if (bytes > 1024 * 1024) stop(new Error('provider_output_limit')); else stderr += chunk; });
         child.on('error', () => stop(new Error('provider_unavailable')));

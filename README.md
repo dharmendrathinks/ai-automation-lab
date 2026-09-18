@@ -4,13 +4,15 @@ A local, synthetic SaaS support lab for learning reliable AI business automation
 structured reasoning, deterministic workflows, human approval, idempotency and
 independent outcome verification.
 
-**Under construction.** The bounded Codex feasibility check is frozen with live
-runtime disabled: its isolated authentication gate was not satisfied. Development
-continues in **FIXTURE MODE**. No live-AI evaluation is claimed.
+**FIXTURE MODE is the default.** An isolated, explicit **LIVE AI MODE** using
+Codex CLI 0.155.0 and `gpt-5.6-terra` is also validated for local experiments.
+No model credentials are required for the default setup or deterministic demos.
 
-See the [actual spike result and limitations](docs/decisions/0001-codex-feasibility.md).
+See the [original no-go](docs/decisions/0001-codex-feasibility.md), the
+[Milestone 6 revalidation](docs/decisions/0002-codex-live-revalidation.md), and
+the [live evaluation evidence](docs/experiments/live-ai-evaluation.md).
 
-Milestone 5 is complete. RelayDesk stores a ticket, automation run, audit entry
+Milestone 6 is complete. RelayDesk stores a ticket, automation run, audit entry
 and outbox event in one PostgreSQL transaction. The pinned PostgreSQL 18.6 and
 n8n 2.38.7 services have reproducible local bootstrap, separate databases and
 credentials, and a reviewed connectivity workflow that proves n8n can reach the
@@ -23,6 +25,12 @@ refund proposal, require an exact human approval, execute idempotently, and are
 verified through the billing read path. The reliability lab covers pre-commit
 failure, committed-but-lost response, false success, unknown outcomes, restart
 and safe reconciliation without duplicate refunds.
+
+The same n8n workflows now use a backend-selected provider without knowing Codex
+details. A 100-call live evaluation produced 90% exact structured matches and
+100% outcome-equivalent safe routing; a live supported ticket was resolved only
+after destination read-back verification. Provider monetary cost was unavailable
+and is not invented.
 
 ## Development
 
@@ -40,13 +48,28 @@ pnpm test:triage
 pnpm test:support
 pnpm test:refund
 pnpm test:reliability
+pnpm report:outcomes
 ```
 
-Tests use fake processes and synthetic inputs; they do not call a model.
+Default tests use fake processes and synthetic inputs; they do not call a model.
+Live commands are separately named and require explicit environment configuration.
 
 Run `pnpm test:baseline` to reproduce unit, type, build and database integration
 checks on Node 24.21.0 and the running PostgreSQL 18.6 container. See
 [local setup, endpoints and current limitations](docs/guides/LOCAL_DEVELOPMENT.md).
+
+To reproduce the small economics/outcome report after a demo:
+
+```sh
+pnpm report:outcomes
+
+# Optional experiment only; explicitly synthetic/configurable, not measured labor:
+LAB_SYNTHETIC_MANUAL_SUPPORT_MINUTES=5 pnpm report:outcomes
+```
+
+The report answers whether verified automation occurred and exposes missing human
+effort or cost evidence as `null`, never as zero. A supplied baseline estimates
+minutes, not dollar savings.
 
 ## Project guides
 

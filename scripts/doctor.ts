@@ -13,4 +13,4 @@ console.log(`OK  node — ${process.version}`);
 check('pnpm', ['--version']);
 check('docker', ['info', '--format', '{{.ServerVersion}} {{.Architecture}}']);
 check('docker', ['compose', 'version']);
-console.log('OK  provider — FIXTURE MODE (live inference remains disabled)');
+console.log('OK  provider — FIXTURE MODE default (live inference requires explicit isolated configuration)');
