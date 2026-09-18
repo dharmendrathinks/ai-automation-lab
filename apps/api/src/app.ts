@@ -6,10 +6,12 @@ import { createTicketSchema } from '../../../packages/contracts/src/tickets.js';
 import type { Database } from './db/index.js';
 import { approvals, auditEvents, automationRuns, customers, invoices, outboxEvents, payments, proposedActions, refunds, scenarioInstances, subscriptions, ticketMessages, tickets } from './db/schema.js';
 import { createTicket } from './tickets.js';
-import { claimEvent, classifyFixture, evaluateTriagePolicy } from './triage.js';
+import { claimEvent, classifyRun, evaluateTriagePolicy } from './triage.js';
 import { claimAction, decideApproval, executeAction, executeSupportResponse, verifyAction, verifySupportResponse } from './actions.js';
+import { FixtureProvider } from './providers.js';
+import type { AIProvider } from './providers.js';
 
-export function buildApp({ db, token, n8nToken, now = () => new Date() }: { db: Database; token: string; n8nToken?: string; now?: () => Date }) {
+export function buildApp({ db, token, n8nToken, provider = new FixtureProvider(), now = () => new Date() }: { db: Database; token: string; n8nToken?: string; provider?: AIProvider; now?: () => Date }) {
   if (token.length < 32) throw new Error('LAB_OPERATOR_TOKEN must contain at least 32 characters.');
   const app = Fastify({ bodyLimit: 16 * 1024, ajv: { customOptions: { removeAdditional: false, coerceTypes: false } } });
   const digest = (value: string) => createHash('sha256').update(value).digest();
@@ -30,11 +32,11 @@ export function buildApp({ db, token, n8nToken, now = () => new Date() }: { db: 
     const status = typeof code === 'number' && code >= 400 && code < 500 ? code : 500;
     reply.code(status).send({ error: status === 500 ? 'internal_error' : 'invalid_request' });
   });
-  app.get('/healthz', async () => ({ service: 'relaydesk', mode: 'FIXTURE MODE' }));
+  app.get('/healthz', async () => ({ service: 'relaydesk', mode: provider.mode }));
   app.get('/dashboard', async (_request, reply) => reply.type('text/html; charset=utf-8').send(`<!doctype html>
 <html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>RelayDesk run timeline</title>
 <style>body{font:16px system-ui;max-width:900px;margin:3rem auto;padding:0 1rem;color:#18202a}form{display:grid;gap:.75rem}input,button{font:inherit;padding:.65rem}pre{white-space:pre-wrap;background:#f3f5f7;padding:1rem;border-radius:.5rem}.mode{font-weight:700;color:#8a4b08}</style>
-<h1>RelayDesk run timeline</h1><p class="mode">FIXTURE MODE</p><form id="form"><label>Run ID <input id="run" required></label><label>Local operator token <input id="token" type="password" required></label><button>Load timeline</button></form><pre id="output">Enter a synthetic run ID.</pre>
+<h1>RelayDesk run timeline</h1><p class="mode">${provider.mode}</p><form id="form"><label>Run ID <input id="run" required></label><label>Local operator token <input id="token" type="password" required></label><button>Load timeline</button></form><pre id="output">Enter a synthetic run ID.</pre>
 <script>document.querySelector('#form').addEventListener('submit',async(e)=>{e.preventDefault();const out=document.querySelector('#output');out.textContent='Loading…';const id=document.querySelector('#run').value;const token=document.querySelector('#token').value;const response=await fetch('/api/v1/runs/'+encodeURIComponent(id),{headers:{authorization:'Bearer '+token}});out.textContent=JSON.stringify(await response.json(),null,2)});</script></html>`));
   app.get('/readyz', async () => { await db.execute(sql`SELECT 1`); return { ready: true }; });
   app.get('/api/v1/metrics/outcomes', async () => {
@@ -58,7 +60,7 @@ export function buildApp({ db, token, n8nToken, now = () => new Date() }: { db: 
       (SELECT count(*)::int FROM proposed_actions WHERE business_outcome='unknown') AS current_unknown,
       (SELECT count(*)::int FROM audit_events WHERE event_type='duplicate.event_suppressed') + (SELECT count(*)::int FROM action_attempts WHERE result='idempotent_replay') AS duplicate_prevention_events`);
     const rel = reliability.rows[0] as Record<string, number | null>;
-    return { mode: 'FIXTURE MODE', cohort: { tickets: row.tickets }, automationRate: row.tickets ? row.resolved / row.tickets : null, humanEscalationRate: row.tickets ? row.escalated / row.tickets : null, verifiedCompletionRate: row.tickets ? row.resolved / row.tickets : null, verifiedActions: row.verified_actions, meanHandlingMs: row.mean_handling_ms === null ? null : Number(row.mean_handling_ms), meanApprovalElapsedMs: row.mean_approval_elapsed_ms === null ? null : Number(row.mean_approval_elapsed_ms), activeReviewMinutes: null, humanMinutesPerTicket: null, estimatedHumanMinutesSaved: null, reliability: { attemptedActions: rel.attempted_actions ?? 0, failureRate: rel.attempted_actions ? Number(rel.failed_actions ?? 0) / rel.attempted_actions : null, retriedActions: rel.retried_actions ?? 0, everUnknown: rel.ever_unknown ?? 0, currentUnknown: rel.current_unknown ?? 0, recoveredActions: rel.recovered_actions ?? 0, duplicatePreventionEvents: rel.duplicate_prevention_events ?? 0 } };
+    return { mode: provider.mode, cohort: { tickets: row.tickets }, automationRate: row.tickets ? row.resolved / row.tickets : null, humanEscalationRate: row.tickets ? row.escalated / row.tickets : null, verifiedCompletionRate: row.tickets ? row.resolved / row.tickets : null, verifiedActions: row.verified_actions, meanHandlingMs: row.mean_handling_ms === null ? null : Number(row.mean_handling_ms), meanApprovalElapsedMs: row.mean_approval_elapsed_ms === null ? null : Number(row.mean_approval_elapsed_ms), activeReviewMinutes: null, humanMinutesPerTicket: null, estimatedHumanMinutesSaved: null, reliability: { attemptedActions: rel.attempted_actions ?? 0, failureRate: rel.attempted_actions ? Number(rel.failed_actions ?? 0) / rel.attempted_actions : null, retriedActions: rel.retried_actions ?? 0, everUnknown: rel.ever_unknown ?? 0, currentUnknown: rel.current_unknown ?? 0, recoveredActions: rel.recovered_actions ?? 0, duplicatePreventionEvents: rel.duplicate_prevention_events ?? 0 } };
   });
   app.post('/api/v1/tickets', { schema: { body: z.toJSONSchema(createTicketSchema, { target: 'draft-7' }) } }, async (request, reply) => {
     const input = createTicketSchema.safeParse(request.body);
@@ -84,9 +86,9 @@ export function buildApp({ db, token, n8nToken, now = () => new Date() }: { db: 
     if (!z.uuid().safeParse(request.params.id).success) return reply.code(400).send({ error: 'invalid_request' });
     return await claimEvent(db, request.params.id, now()) ?? reply.code(404).send({ error: 'not_found' });
   });
-  app.post<{ Params: { id: string } }>('/automation/v1/runs/:id/fixture-decision', async (request, reply) => {
+  app.post<{ Params: { id: string } }>('/automation/v1/runs/:id/decision', async (request, reply) => {
     if (!z.uuid().safeParse(request.params.id).success) return reply.code(400).send({ error: 'invalid_request' });
-    return await classifyFixture(db, request.params.id, now()) ?? reply.code(404).send({ error: 'not_found' });
+    return await classifyRun(db, request.params.id, now(), provider) ?? reply.code(404).send({ error: 'not_found' });
   });
   app.post<{ Params: { id: string } }>('/automation/v1/runs/:id/policy', async (request, reply) => {
     if (!z.uuid().safeParse(request.params.id).success) return reply.code(400).send({ error: 'invalid_request' });

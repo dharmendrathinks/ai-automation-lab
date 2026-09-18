@@ -78,6 +78,21 @@ the ticket.
 restart. It asserts actual refund/message state, retry receipts and verification
 outcomes so a successful workflow cannot hide a failed business outcome.
 
+Fixture mode remains the default. To opt into the isolated live provider after
+completing its separate ChatGPT login, start the API with an absolute executable:
+
+```sh
+LAB_AI_MODE=live \
+LAB_CODEX_BIN="$(command -v codex)" \
+LAB_CODEX_HOME="$PWD/.local/codex-runtime" \
+pnpm dev:api
+```
+
+n8n calls the same provider-neutral decision endpoint in both modes. Never copy
+the developer Codex home or place credentials in `.env`. Run the fixed live
+evaluation with `pnpm evaluate:live-ai -- 20` and then `-- 100`; monetary cost is
+reported only if the provider supplies it.
+
 For the exact planned baseline, keep the infrastructure running and use:
 
 ```sh

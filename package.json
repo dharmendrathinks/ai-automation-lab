@@ -23,6 +23,7 @@
     "infra:down": "docker compose --env-file .env down",
     "dev": "docker compose --env-file .env up -d --wait && pnpm dev:api",
     "spike:codex": "tsx spikes/codex-feasibility/probe.ts",
+    "evaluate:live-ai": "tsx scripts/evaluate-live-ai.ts",
     "test:integration": "tsx scripts/test-postgres.ts",
     "db:setup": "tsx --env-file=.env scripts/db-setup.ts",
     "dev:api": "tsx --env-file=.env apps/api/src/server.ts",

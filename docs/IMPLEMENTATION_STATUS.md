@@ -147,8 +147,17 @@ False-success and lost-response/idempotency are worthwhile video experiments;
 their start/end tags and reproducible evidence are recorded in
 [video checkpoints](VIDEO_CHECKPOINTS.md).
 
-Next: milestone 6 remains blocked by the frozen live Codex authentication gate.
-Milestones 7 and 8 remain executable in fixture mode.
+Milestone 6 reopened the bounded Codex decision for the concrete runtime
+integration. Isolated ChatGPT authentication now works, CLI 0.155.0 produces
+schema-valid `gpt-5.6-terra` decisions, and the provider-neutral backend path plus
+20/100-call evaluation tooling are implemented. The 100-call live cohort reached
+90% exact matches and 100% outcome-equivalent routing; cost remains unknown.
+
+Milestone 6 is not complete: Docker/n8n is unavailable on the current host, so
+the changed workflow has not passed fixture and live end-to-end acceptance, and
+the remaining isolation/cancellation checks must be closed before enabling or
+tagging the milestone. Milestones 7 and 8 remain executable in fixture mode once
+their infrastructure-dependent tests can run.
 
 See [local development](guides/LOCAL_DEVELOPMENT.md) for reproduction commands,
 available endpoints and the current limitations.

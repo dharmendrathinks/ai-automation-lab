@@ -8,7 +8,7 @@ import { runDecision } from './runner.js';
 
 const executable = process.env.LAB_CODEX_BIN;
 if (!executable || !isAbsolute(executable)) {
-  throw new Error('Set LAB_CODEX_BIN to the absolute path of Codex CLI 0.154.0.');
+  throw new Error('Set LAB_CODEX_BIN to the absolute path of Codex CLI 0.155.0.');
 }
 const runtimeHome = resolve('.local/codex-runtime');
 await mkdir(runtimeHome, { recursive: true, mode: 0o700 });
@@ -20,15 +20,15 @@ const config = ['--ignore-user-config', '--strict-config',
   '-c', 'forced_login_method="chatgpt"', '-c', 'cli_auth_credentials_store="file"'];
 try {
   const version = spawnSync(executable, ['--version'], { env, encoding: 'utf8', timeout: 10_000 });
-  if (version.status !== 0 || version.stdout.trim() !== 'codex-cli 0.154.0') {
-    throw new Error('Pinned Codex CLI 0.154.0 is required.');
+  if (version.status !== 0 || version.stdout.trim() !== 'codex-cli 0.155.0') {
+    throw new Error('Pinned Codex CLI 0.155.0 is required.');
   }
   // No model invocation until isolated authentication is established.
   const auth = spawnSync(executable, ['-c', 'cli_auth_credentials_store="file"',
     'login', 'status'], { env, cwd, encoding: 'utf8', timeout: 10_000 });
   const chatgptAuth = auth.status === 0 && /logged in using chatgpt/i.test(auth.stdout + auth.stderr);
   if (!chatgptAuth) {
-    console.log(JSON.stringify({ mode: 'PREFLIGHT ONLY', cliVersion: '0.154.0',
+    console.log(JSON.stringify({ mode: 'PREFLIGHT ONLY', cliVersion: '0.155.0',
       result: 'NO_GO', reason: 'isolated_chatgpt_authentication_not_established',
       modelCalls: 0, runtimeEnabled: false }, null, 2));
     process.exitCode = 2;
@@ -43,11 +43,11 @@ try {
         '-c', 'approval_policy="never"', '-c', 'features.shell_tool=false',
         '-c', 'features.unified_exec=false', '-c', 'features.hooks=false',
         '-c', 'features.code_mode.enabled=false', '-c', 'agents.enabled=false',
-        '-c', 'apps._default.enabled=false', '-c', 'tools.view_image=false',
-        '-c', 'web_search="disabled"', '-c', 'project_doc_max_bytes=0', '-'],
+        '-c', 'apps._default.enabled=false', '-c', 'web_search="disabled"',
+        '-c', 'project_doc_max_bytes=0', '-'],
     });
     // A successful smoke call is NOT proof of tool isolation or runtime approval.
-    console.log(JSON.stringify({ mode: 'LIVE AI MODE', cliVersion: '0.154.0', model,
+    console.log(JSON.stringify({ mode: 'LIVE AI MODE', cliVersion: '0.155.0', model,
       result, runtimeEnabled: false, limitation: 'Tool isolation still requires independent proof.' }, null, 2));
     if (!result.ok) process.exitCode = 1;
   }

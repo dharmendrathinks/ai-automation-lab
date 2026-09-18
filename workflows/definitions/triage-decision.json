@@ -34,13 +34,13 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=http://host.docker.internal:3001/automation/v1/runs/{{$json.runId}}/fixture-decision",
+        "url": "=http://host.docker.internal:3001/automation/v1/runs/{{$json.runId}}/decision",
         "sendHeaders": true,
         "headerParameters": { "parameters": [{ "name": "Authorization", "value": "={{ $('Ticket Created').item.json.headers.authorization }}" }] },
         "options": {}
       },
       "id": "a6d270b5-d0b8-43e1-86cb-f5a9980b0558",
-      "name": "Fixture Decision",
+      "name": "Request Decision",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [480, 0]
@@ -62,13 +62,13 @@
   ],
   "connections": {
     "Ticket Created": { "main": [[{ "node": "Claim Event", "type": "main", "index": 0 }]] },
-    "Claim Event": { "main": [[{ "node": "Fixture Decision", "type": "main", "index": 0 }]] },
-    "Fixture Decision": { "main": [[{ "node": "Evaluate Policy", "type": "main", "index": 0 }]] }
+    "Claim Event": { "main": [[{ "node": "Request Decision", "type": "main", "index": 0 }]] },
+    "Request Decision": { "main": [[{ "node": "Evaluate Policy", "type": "main", "index": 0 }]] }
   },
   "settings": { "executionOrder": "v1" },
   "staticData": null,
   "meta": { "templateCredsSetupCompleted": true },
   "pinData": {},
-  "versionId": "740799c7-f407-450a-ab4e-a066bdde51ca",
+  "versionId": "55df1fc5-3cab-4bbb-9c35-96e3e76f1b22",
   "tags": []
 }
