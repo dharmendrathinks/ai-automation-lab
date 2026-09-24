@@ -40,7 +40,7 @@ export async function classifyRun(db: Database, runId: string, now: Date, provid
         if (!existing?.decision) throw new Error('provider_result_conflict');
         return { runId, decision: triageDecisionSchema.parse(existing.decision), reused: true };
       }
-      await tx.update(automationRuns).set({ decision: result.decision }).where(eq(automationRuns.id, runId));
+      await tx.update(automationRuns).set({ decision: result.decision, mode: provider.mode }).where(eq(automationRuns.id, runId));
       await tx.insert(auditEvents).values({ id: randomUUID(), runId, eventType: 'triage.decision_recorded', actor: result.provider === 'codex' ? 'CodexProvider' : 'FixtureProvider', evidence: { provider: result.provider, model: result.model, durationMs: result.durationMs, usage: result.usage, category: result.decision.category, intent: result.decision.intent }, createdAt: now });
       return { runId, decision: result.decision, reused: false };
     });

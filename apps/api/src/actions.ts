@@ -19,7 +19,7 @@ export async function claimAction(db: Database, actionId: string, now: Date) {
 
 export async function decideApproval(db: Database, approvalId: string, decision: 'approved' | 'rejected', reason: string, now: Date) {
   return db.transaction(async (tx) => {
-    const [approval] = await tx.select().from(approvals).where(eq(approvals.id, approvalId));
+    const [approval] = await tx.select().from(approvals).where(eq(approvals.id, approvalId)).for('update');
     if (!approval) return null;
     if (approval.status !== 'pending') {
       if (approval.status === decision) return { approvalId, actionId: approval.actionId, status: approval.status, replayed: true };

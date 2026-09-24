@@ -29,6 +29,7 @@
     "evaluate:live-ai": "tsx scripts/evaluate-live-ai.ts",
     "report:outcomes": "tsx --env-file=.env scripts/report-outcomes.ts",
     "test:integration": "tsx scripts/test-postgres.ts",
+    "test:workspace": "tsx --env-file=.env scripts/test-workspace-smoke.ts",
     "db:setup": "tsx --env-file=.env scripts/db-setup.ts",
     "dev:api": "tsx --env-file=.env apps/api/src/server.ts",
     "worker:outbox": "tsx --env-file=.env scripts/outbox-worker.ts",
@@ -44,6 +45,7 @@
   "devDependencies": {
     "@types/node": "^24.0.0",
     "@types/pg": "8.23.1",
+    "jsdom": "26.1.0",
     "tsx": "^4.20.0",
     "typescript": "7.0.2",
     "vitest": "5.0.0"
