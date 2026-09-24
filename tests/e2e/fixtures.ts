@@ -209,6 +209,10 @@ export const test = base.extend<
       firefoxAppData
         ? {
             ...launchOptions,
+            firefoxUserPrefs: {
+              ...launchOptions.firefoxUserPrefs,
+              'accessibility.tabfocus': 7,
+            },
             env: {
               ...process.env,
               ...launchOptions.env,
