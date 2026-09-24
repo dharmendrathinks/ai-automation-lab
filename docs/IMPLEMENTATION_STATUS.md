@@ -1,6 +1,7 @@
 # Implementation status
 
-Updated: 2026-09-24. Branch: `feat/automation-foundation`. All checkpoints are local.
+Updated: 2026-09-24. Branch: `feat/automation-foundation`. The implementation
+branch is published with maintainer authorization; milestone tags remain local.
 
 ## Current assessment — not yet full plan completion
 
@@ -58,8 +59,8 @@ tests. No production code was changed in this test-only pass.
 
 Local validation: **59 unit/DOM/process/corpus/harness tests, 35 isolated PostgreSQL
 tests, 136 browser-stack tests**, build, application/E2E type checks and diff
-whitespace checks pass. CI now also runs the database regression suite; remote
-execution has not been claimed. All commits remain local and tags are unchanged.
+whitespace checks pass. These were the local results before the subsequent
+authorized push; tags are unchanged.
 
 The final local-clone rehearsal at `d26ad1e` had no `.env` or `.local` credentials
 and used a fresh locked install. The full matrix passed in **4.5 minutes** after
@@ -68,6 +69,23 @@ bounding disposable runtime heaps; the preceding OOM failure is preserved in the
 pinned 18.6 Docker container, removing the implicit Homebrew dependency. The
 baseline command no longer targets the normal lab database. No architecture,
 workflow, shared VM or normal-service configuration changed.
+
+### Follow-up hardening and remote evidence
+
+The first authorized [GitHub Actions run](https://github.com/dharmendrathinks/ai-automation-lab/actions/runs/35992480469)
+passed at `38f3194`: 59 unit/process/DOM/harness tests, 35 isolated PostgreSQL
+tests, 136 browser tests, build and both type checks, using Node 24.21.0 on native
+Ubuntu ARM64. It supersedes the earlier statement that remote CI was unverified.
+The repository remains private; publication is not a release or human signoff.
+
+The follow-up review adds a pinned correctness linter to the baseline and CI,
+refreshes immutable action pins, validates distinct automation/operator tokens,
+unifies scenario intake validation, and guards verification against premature
+reads and wrong-ticket responses. UI regressions cover cancelled connections,
+late writes, disconnect during loading, skip-link focus and 320px long-content
+reflow. See [hardening review](experiments/release-hardening.md) for reproducible
+checks, failures and scope. Architecture, n8n workflows and deferred scope remain
+unchanged; no additional live inference was needed.
 
 Remaining evidence/signoff gates:
 
@@ -82,10 +100,10 @@ Remaining evidence/signoff gates:
 - Complete human visual/screen-reader signoff. Screenshots have been inspected
   and automated axe/keyboard/viewport checks run, but this is not accessibility
   certification.
-- Remote CI remains unverified: the maintainer explicitly requested that all
-  commits stay local. No push, remote workflow dispatch, merge, visibility change
-  or release is authorized. Native ARM64 is the planned platform; x86/emulation
-  is not a release requirement.
+- Check remote CI for the exact proposed commit, not just a historical green run.
+  The maintainer authorized branch pushes and CI checks, not a merge, visibility
+  change, release or tag publication. Native ARM64 is the planned platform;
+  x86/emulation is not a release requirement.
 
 The [release-signoff checklist](guides/RELEASE_SIGNOFF.md) gives the observation
 protocol and human review steps. Automated tests cannot supply those signoffs.

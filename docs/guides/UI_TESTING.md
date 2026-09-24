@@ -56,7 +56,7 @@ pnpm test:e2e:all
 # Type-check the test harness and specs
 pnpm test:e2e:typecheck
 
-# Unit/type/build and isolated PostgreSQL regression checks (no .env required)
+# Lint/unit/type/build and isolated PostgreSQL regression checks (no .env required)
 pnpm test:baseline
 
 # Inspect screenshots and failure traces
@@ -87,16 +87,16 @@ worker-level database isolation. `--repeat-each=2` is useful for repeatability.
 | Effort entry          | Real form validates total/review minutes; synthetic snapshots remain separate from operator-reported labor     |
 | Native Wait recovery  | Real waiting execution survives n8n restart; approval/callback races and duplicate replay remain safe         |
 | Session/security      | Invalid token, logout/reload, no stored credentials, escaped hostile text, restrictive CSP, private API auth    |
-| Interaction           | Native validation, search/filters, empty/error views, deep links, retained input after write failure            |
+| Interaction           | Validation, search/filters, loading/errors, deep links, cancelled login, disconnected reads, skip navigation    |
 | Keyboard journeys     | Connect, create invoice/refund, inspect and approve using keys only; independently verify destination records |
-| Accessibility/layout  | Axe WCAG A/AA checks, keyboard dialog focus/Escape, 1440/1024/390px overflow checks, screenshot evidence        |
+| Accessibility/layout  | Axe WCAG A/AA, dialog focus/Escape, 1440/1024/390/320px overflow, 8,000-character messages, screenshots          |
 
 `journeys.spec.ts` tests business journeys. `workspace.spec.ts` tests interaction
-and security boundaries. Only error-transport tests intercept responses; they
-simulate a failure, not a successful business result. `accessibility.spec.ts`
+and security boundaries. Transport-edge tests intercept failures or hold a real
+request to expose races; they never invent a successful business result. `accessibility.spec.ts`
 checks semantics/layout and captures actual screenshots. Browser engines are
 Chromium, Firefox, and WebKit, plus mobile Chromium emulation (not a real device).
-There are 34 cases per project, 136 in the full matrix. `keyboard.spec.ts` uses
+There are 38 cases per project, 152 in the full matrix. `keyboard.spec.ts` uses
 Tab/Shift-Tab, typing and activation keys without programmatic focus or clicks.
 On macOS, WebKit uses Option-Tab to include all controls; Firefox's disposable
 test profile enables all-control tab navigation. These tests do not change OS

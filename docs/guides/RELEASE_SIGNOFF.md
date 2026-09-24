@@ -45,7 +45,7 @@ viewport. Mark each item PASS, FAIL (with reproduction), or NOT TESTED.
   evidence while polling is active; reading/focus must not unexpectedly reset.
 - Exercise a failed write, unknown outcome and reconciliation. Errors must be
   understandable, input recoverable and status changes perceivable.
-- Inspect 1440, 1024 and 390px widths, zoom/reflow, focus, scrolling and modal
+- Inspect 1440, 1024, 390 and 320px widths, zoom/reflow, focus, scrolling and modal
   actions. Check populated content as well as empty screens.
 - Read Outcomes: N/A and synthetic assumptions must not sound like measured savings.
 
@@ -55,12 +55,19 @@ Do not mark human signoff complete from those tests alone.
 
 ## Remote publication and CI
 
-Checked 2026-09-24: GitHub repository private; no registered Actions workflows or
-run history. The maintainer explicitly requested **all commits remain local**.
-Remote CI is therefore unverified and deferred by that boundary, not reported as
-passing. Do not push, change visibility, merge or publish a release.
+On 2026-09-24 the maintainer subsequently authorized pushing the implementation
+branch and checking remote CI, superseding the earlier local-only instruction.
+The repository remains private. No merge, release, visibility change or tag push
+is part of that authorization.
 
-If later authorized, record the exact remote commit and successful workflow URL.
+The first remote run [35992480469](https://github.com/dharmendrathinks/ai-automation-lab/actions/runs/35992480469)
+passed at commit `38f3194df2562e92617b7c485d5ac1dffd9f936a` on native Ubuntu ARM64,
+Node 24.21.0: 59 unit/process/DOM/harness tests, 35 PostgreSQL tests, 136 browser
+tests, build and both type checks. This is historical evidence, not proof for
+later commits. Check the [branch workflow history](https://github.com/dharmendrathinks/ai-automation-lab/actions/workflows/ui-e2e.yml)
+against the exact proposed commit before merging. The hardening pass adds lint
+to CI and updates immutable action pins to Node-24-based releases.
+
 A local rehearsal is not a GitHub Actions run. Native ARM64 is the supported
 platform in `PLAN.md`; x86 compatibility is not claimed and emulation is not a
 release requirement.

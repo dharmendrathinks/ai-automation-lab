@@ -50,6 +50,7 @@ This is separate from the n8n editor and does not require n8n Assistant setup.
 pnpm install
 pnpm run doctor
 pnpm run setup
+pnpm lint
 pnpm test
 pnpm typecheck
 pnpm build
@@ -66,7 +67,7 @@ Default tests use fake processes and synthetic inputs; they do not call a model.
 Live commands are separately named and require explicit environment configuration.
 
 Run `pnpm test:baseline` with the repository's Node/pnpm versions to reproduce
-unit, application/browser type checks, build and database integration checks.
+lint, unit tests, application/browser type checks, build and database integration checks.
 Database tests create and remove their own pinned PostgreSQL 18.6 container;
 they require Docker, not `.env` or a running development stack. See
 [local setup, endpoints and current limitations](docs/guides/LOCAL_DEVELOPMENT.md).
@@ -92,6 +93,7 @@ savings; see the [measurement protocol](docs/experiments/outcome-effort-report.m
 - [Contributing](CONTRIBUTING.md)
 - [Real-browser end-to-end testing](docs/guides/UI_TESTING.md)
 - [Implementation status and evidence](docs/IMPLEMENTATION_STATUS.md)
+- [Release checks and human signoff](docs/guides/RELEASE_SIGNOFF.md)
 - [Repository workflow and evidence](docs/REPOSITORY_WORKFLOW.md)
 - [Video checkpoints](docs/VIDEO_CHECKPOINTS.md)
 

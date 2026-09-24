@@ -24,8 +24,9 @@ existing lab left untouched. The accompanying 58 unit/DOM/process/corpus tests,
 The Firefox fix follows the observed macOS direct-execution failure discussed in
 [Mozilla issue 2069536](https://bugzilla.mozilla.org/show_bug.cgi?id=2069536).
 Current full-plan limitations are tracked in
-[implementation status](../IMPLEMENTATION_STATUS.md). Remote CI and physical
-devices remain unvalidated; automated axe checks are not screen-reader signoff.
+[implementation status](../IMPLEMENTATION_STATUS.md). Remote CI was subsequently
+validated in [run 35992480469](https://github.com/dharmendrathinks/ai-automation-lab/actions/runs/35992480469).
+Physical devices remain unvalidated; automated axe checks are not screen-reader signoff.
 
 ## September 24 clean-clone resource experiment
 
@@ -64,9 +65,10 @@ pnpm test:e2e:report
 ```
 
 The original audit had 30 scenarios per browser project. The current suite has
-34: 15 business journeys, 8 workspace interaction/security checks, 8
+38: 15 business journeys, 11 workspace interaction/security checks, 9
 accessibility/layout checks, 2 keyboard-only journeys and 1 native Wait recovery
-exercise. The actual
+exercise. The [follow-up review](release-hardening.md) adds cancellation/loading
+races, skip-link navigation and maximum-length content at 320px. The actual
 backend, PostgreSQL and imported n8n workflows run in a disposable stack.
 All data is synthetic and all inference uses `FixtureProvider`; no live model
 account, real money, or developer credentials are involved.

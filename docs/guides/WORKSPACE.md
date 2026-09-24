@@ -24,6 +24,11 @@ key or an n8n credential. The token is retained only in tab memory, never in URL
 local storage, session storage, or the server-delivered HTML. Refreshing or
 disconnecting clears it. This remains a local synthetic lab, not production auth.
 
+Cancel or Escape during connection discards that attempt, even if readiness
+responds later. Closing a submitted ticket/review/effort dialog does **not** cancel
+the server write. A late response leaves any new draft/dialog untouched; inspect
+the queue or refresh the workspace before retrying, rather than assuming failure.
+
 ## Screens
 
 | View | What to try |
@@ -65,6 +70,7 @@ evidence is being read. Tokens and business data are not embedded in static asse
 ## Verification
 
 ```sh
+pnpm lint
 pnpm test              # includes isolated DOM interaction and escaping tests
 pnpm test:integration  # creates and removes its own temporary PostgreSQL cluster
 pnpm typecheck
@@ -88,7 +94,7 @@ success (failed verification/zero messages), and unavailable verification
 (unknown, then verified via reconciliation/one message). No live model was called.
 
 The subsequent [browser test suite](UI_TESTING.md) now exercises real journeys,
-keyboard interactions, accessibility and 1440/1024/390px layouts, with screenshot
+keyboard interactions, accessibility and 1440/1024/390/320px layouts, with screenshot
 evidence. Its [audit](../experiments/ui-e2e-audit.md) preserves the original failures
 and their repaired, passing results, including Firefox. The
 [release-signoff checklist](RELEASE_SIGNOFF.md) separates those automated results
