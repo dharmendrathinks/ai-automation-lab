@@ -194,6 +194,7 @@ test('ticket form submits explicit synthetic content and opens real ticket detai
     customerRef: 'CUSTOMER-001',
     message: 'How do I download an invoice?',
   });
+  expect(request[1].headers['Content-Type']).toBe('application/json');
   expect(document.querySelector('h1').textContent).toBe(
     'The request. The response. The evidence.',
   );
@@ -218,6 +219,30 @@ test('ticket search and empty results preserve the query and remain usable', asy
   expect(document.querySelector('#ticket-search').value).toBe(
     'not a matching request',
   );
+});
+
+test('bodyless API requests do not declare a JSON entity', async () => {
+  await connect();
+  const reads = fetchMock.mock.calls.filter(([url]) => url.startsWith('/api/'));
+  expect(reads.length).toBeGreaterThan(0);
+  for (const [, options] of reads) {
+    expect(options.body).toBeUndefined();
+    expect(options.headers).not.toHaveProperty('Content-Type');
+    expect(options.headers.Authorization).toBe(`Bearer ${operator}`);
+  }
+});
+
+test('ticket reference pattern compiles under modern HTML Unicode-set rules', async () => {
+  await connect();
+  click('[data-action="new-ticket"]');
+  const pattern = new RegExp(
+    `^(?:${document.querySelector('#customer-ref').pattern})$`,
+    'v',
+  );
+  for (const value of ['CUSTOMER-001', 'customer_2', 'A'])
+    expect(pattern.test(value)).toBe(true);
+  for (const value of ['', 'invalid reference', 'customer/1', 'x'.repeat(65)])
+    expect(pattern.test(value)).toBe(false);
 });
 
 test('approval form shows exact payment, requires a decision and sends reviewer reason', async () => {

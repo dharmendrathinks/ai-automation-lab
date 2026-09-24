@@ -5,6 +5,9 @@ import {
   type Page,
 } from '@playwright/test';
 import { FIXTURE_CLOCK, OPERATOR_TOKEN } from './support/constants.js';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 export type Oracle = {
   ticket: { id: string; status: string; message: string };
@@ -179,7 +182,42 @@ export class Workspace {
   }
 }
 
-export const test = base.extend<{ lab: Lab; ui: Workspace }>({
+export const test = base.extend<
+  { lab: Lab; ui: Workspace },
+  { firefoxAppData: string | undefined }
+>({
+  firefoxAppData: [
+    async ({ browserName }, use) => {
+      if (browserName !== 'firefox' || process.platform !== 'darwin') {
+        await use(undefined);
+        return;
+      }
+      // macOS can deny direct-exec Firefox access to the personal app-data directory.
+      // Use a fresh owned directory, not a permission change or a personal profile.
+      // https://bugzilla.mozilla.org/show_bug.cgi?id=2069536
+      const directory = await mkdtemp(join(tmpdir(), 'relaydesk-e2e-firefox-'));
+      try {
+        await use(directory);
+      } finally {
+        await rm(directory, { recursive: true, force: true });
+      }
+    },
+    { scope: 'worker' },
+  ],
+  launchOptions: async ({ launchOptions, firefoxAppData }, use) => {
+    await use(
+      firefoxAppData
+        ? {
+            ...launchOptions,
+            env: {
+              ...process.env,
+              ...launchOptions.env,
+              MOZ_APP_DATA: firefoxAppData,
+            },
+          }
+        : launchOptions,
+    );
+  },
   baseURL: async ({}, use) => {
     const url = process.env.RELAYDESK_E2E_BASE_URL;
     if (!url || !/^http:\/\/127\.0\.0\.1:\d+$/.test(url))

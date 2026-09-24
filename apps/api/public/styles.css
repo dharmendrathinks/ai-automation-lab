@@ -18,7 +18,8 @@
   --canvas: #f6f5f1;
   --surface: #fff;
   --ink: #24312d;
-  --muted: #67716b;
+  /* Keep small muted text above AA contrast on tinted panels and controls too. */
+  --muted: #59635d;
   --line: #e3e5de;
   --rail: #202b29;
   --accent: #b9492b;
