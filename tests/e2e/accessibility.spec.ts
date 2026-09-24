@@ -136,6 +136,12 @@ test('populated ticket, conversation, run evidence and expanded audit are access
   ).toBeVisible();
   await accessible(page);
   await capture(page, info, 'conversation');
+  await page
+    .getByRole('button', { name: 'Record effort', exact: true })
+    .click();
+  await accessible(page);
+  await capture(page, info, 'effort-dialog');
+  await page.keyboard.press('Escape');
   await ui.inspectRun();
   await page.getByText('Full decision contract', { exact: true }).click();
   await accessible(page);

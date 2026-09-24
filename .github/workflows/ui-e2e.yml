@@ -37,6 +37,8 @@ jobs:
           pnpm test:e2e:typecheck
           pnpm test
           pnpm build
+      - name: Test persisted policy, effort and concurrency contracts
+        run: pnpm test:integration
       - name: Install browser engines
         run: pnpm exec playwright install --with-deps chromium firefox webkit
       - name: Test real UI, PostgreSQL and n8n

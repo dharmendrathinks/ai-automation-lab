@@ -182,7 +182,11 @@ export async function startStack() {
     );
     const definitions = join(directory, 'workflows');
     await mkdir(definitions);
-    for (const name of ['triage-decision', 'action-verification']) {
+    for (const name of [
+      'triage-decision',
+      'action-verification',
+      'wait-resume-exercise',
+    ]) {
       const original = await readFile(
         join(repository, 'workflows', 'definitions', `${name}.json`),
         'utf8',
@@ -199,7 +203,11 @@ export async function startStack() {
       await writeFile(join(definitions, `${name}.json`), workflow);
     }
     await compose('exec', '-T', 'n8n', 'mkdir', '-p', '/tmp/e2e-workflows');
-    for (const name of ['triage-decision', 'action-verification'])
+    for (const name of [
+      'triage-decision',
+      'action-verification',
+      'wait-resume-exercise',
+    ])
       await compose(
         'cp',
         join(definitions, `${name}.json`),
@@ -214,7 +222,11 @@ export async function startStack() {
       '--separate',
       '--input=/tmp/e2e-workflows',
     );
-    for (const id of ['relaydeskTriage', 'relaydeskAction'])
+    for (const id of [
+      'relaydeskTriage',
+      'relaydeskAction',
+      'relaydeskWaitResume',
+    ])
       await compose(
         'exec',
         '-T',

@@ -1,5 +1,88 @@
 import { test, expect } from './fixtures.js';
 
+test('effort entry preserves synthetic provenance and does not claim measured savings', async ({
+  ui,
+  page,
+  lab,
+}) => {
+  const ticket = await ui.ticket();
+  await lab.waitFor(
+    ticket.ticketId,
+    (s) => s.ticket.status === 'resolved',
+    'verified support',
+  );
+  await page
+    .getByRole('button', { name: 'Record effort', exact: true })
+    .click();
+  const dialog = page.getByRole('dialog');
+  await expect(
+    dialog.getByLabel('Observation source', { exact: true }),
+  ).toHaveValue('synthetic');
+  await dialog.getByLabel('Total active minutes', { exact: true }).fill('6');
+  await dialog
+    .getByLabel('Review minutes included in total', { exact: true })
+    .fill('7');
+  await dialog
+    .getByLabel('Measurement method and scope', { exact: true })
+    .fill('Synthetic browser arithmetic fixture; not observed human labor.');
+  await dialog
+    .getByRole('button', { name: 'Save observation', exact: true })
+    .click();
+  await expect(dialog.getByRole('alert')).toContainText('Check the input');
+  await dialog
+    .getByLabel('Review minutes included in total', { exact: true })
+    .fill('1');
+  await dialog.getByRole('checkbox').check();
+  await dialog
+    .getByLabel('Matched manual-only baseline', { exact: true })
+    .selectOption('synthetic');
+  await dialog
+    .getByLabel('Baseline minutes (when available)', { exact: true })
+    .fill('5');
+  await dialog
+    .getByLabel('Baseline method/version (when available)', { exact: true })
+    .fill('same invoice task / synthetic-v1');
+  await dialog
+    .getByRole('button', { name: 'Save observation', exact: true })
+    .click();
+  await expect(dialog).not.toBeVisible();
+  const audit = (await lab.oracle(ticket.ticketId)).audit.filter(
+    (a) => a.event_type === 'effort.observed',
+  );
+  expect(audit).toHaveLength(1);
+  expect(audit[0]!.evidence.observation).toMatchObject({
+    source: 'synthetic',
+    totalMinutes: 6,
+    reviewMinutes: 1,
+  });
+  const metrics = await lab.control<{
+    humanMinutesPerTicket: number | null;
+    humanEffort: {
+      synthetic: {
+        savings: { synthetic: { minutesPerMatchedResolvedTicket: number } };
+      };
+    };
+  }>('/api/v1/metrics/outcomes');
+  expect(metrics.humanMinutesPerTicket).toBeNull();
+  expect(
+    metrics.humanEffort.synthetic.savings.synthetic
+      .minutesPerMatchedResolvedTicket,
+  ).toBe(-1);
+  await ui.navigate('Outcomes');
+  await expect(
+    page
+      .getByText('Synthetic effort examples', { exact: true })
+      .locator('..')
+      .locator('..'),
+  ).toContainText('1');
+  await expect(
+    page
+      .getByText('Human minutes per ticket', { exact: true })
+      .locator('..')
+      .locator('..'),
+  ).toContainText('N/A');
+});
+
 test.beforeEach(async ({ ui }) => {
   await ui.open();
   await ui.connect();

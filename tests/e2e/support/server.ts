@@ -38,6 +38,7 @@ const app = buildApp({
   db,
   token: OPERATOR_TOKEN,
   n8nToken: AUTOMATION_TOKEN,
+  n8nOrigin: 'http://n8n:5678',
   provider: new FixtureProvider(),
   now,
 });
@@ -71,7 +72,9 @@ app.post('/__e2e/reset', async () => {
   paused = true;
   await delivery;
   // Hard-coded connection is reachable only inside this disposable Compose network.
-  await pool.query('TRUNCATE tickets, operation_receipts CASCADE');
+  await pool.query(
+    'TRUNCATE tickets, operation_receipts, wait_exercises CASCADE',
+  );
   await pool.query('UPDATE payments SET refunded_amount_minor = 0');
   epoch = Date.now();
   offset = 0;
@@ -148,6 +151,45 @@ app.get<{ Params: { id: string } }>(
         'SELECT event_type, status, attempts FROM outbox_events WHERE run_id=$1',
       ),
     };
+  },
+);
+app.get('/__e2e/n8n-health', async () => ({
+  ready: await fetch('http://n8n:5678/healthz/readiness', {
+    signal: AbortSignal.timeout(2000),
+  })
+    .then((r) => r.ok)
+    .catch(() => false),
+}));
+app.post<{ Params: { id: string } }>(
+  '/__e2e/wait/:id/start',
+  async (request, reply) => {
+    if (!z.uuid().safeParse(request.params.id).success)
+      return reply.code(400).send({ error: 'invalid_test_control' });
+    const response = await fetch(
+      'http://n8n:5678/webhook/relaydesk-wait-start',
+      {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${AUTOMATION_TOKEN}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ exerciseId: request.params.id }),
+        signal: AbortSignal.timeout(10000),
+      },
+    );
+    return { accepted: response.ok };
+  },
+);
+app.get<{ Params: { id: string } }>(
+  '/__e2e/wait/:id',
+  async (request, reply) => {
+    if (!z.uuid().safeParse(request.params.id).success)
+      return reply.code(400).send({ error: 'invalid_test_control' });
+    const result = await pool.query(
+      'SELECT status, resume_url IS NOT NULL AS registered, callback_attempts FROM wait_exercises WHERE id=$1',
+      [request.params.id],
+    );
+    return result.rows[0] ?? reply.code(404).send({ error: 'not_found' });
   },
 );
 const timer = setInterval(tick, 150);
