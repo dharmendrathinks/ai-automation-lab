@@ -65,8 +65,10 @@ pnpm report:outcomes
 Default tests use fake processes and synthetic inputs; they do not call a model.
 Live commands are separately named and require explicit environment configuration.
 
-Run `pnpm test:baseline` to reproduce unit, type, build and database integration
-checks on Node 24.21.0 and the running PostgreSQL 18.6 container. See
+Run `pnpm test:baseline` with the repository's Node/pnpm versions to reproduce
+unit, application/browser type checks, build and database integration checks.
+Database tests create and remove their own pinned PostgreSQL 18.6 container;
+they require Docker, not `.env` or a running development stack. See
 [local setup, endpoints and current limitations](docs/guides/LOCAL_DEVELOPMENT.md).
 
 To reproduce the small economics/outcome report after a demo:

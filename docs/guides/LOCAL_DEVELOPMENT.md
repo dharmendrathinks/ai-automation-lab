@@ -129,18 +129,20 @@ concurrent/duplicate callbacks, expiry and completion after an n8n restart. The
 backend approval record remains authoritative; possession of a resume callback
 never authorizes a business action.
 
-For the exact planned baseline, keep the infrastructure running and use:
+For the deterministic baseline, use the repository's Node/pnpm versions and a
+running Docker engine (no `.env` or development stack required):
 
 ```sh
 pnpm test:baseline
 ```
 
-That command runs the deterministic tests, typecheck and build in the pinned
-Node 24.21.0 ARM64 container, then runs the 12 API integration tests against the
-PostgreSQL 18.6 service. Its temporary dependency volume is deleted afterward.
-For a native isolated PostgreSQL cluster, `pnpm test:integration` remains
-available when `initdb` and `pg_ctl` are installed; set `LAB_PG_BIN` if they are
-outside the Homebrew PostgreSQL 17 path.
+That command runs deterministic tests, application/browser type checks and build
+with your current Node, then runs database integration tests in its own pinned
+PostgreSQL 18.6 ARM64 container. The temporary database is removed afterward;
+the normal development database is never targeted. `pnpm test:integration` runs
+just the database suite. To use an isolated native cluster instead, explicitly
+set `LAB_PG_BIN` to a directory containing `initdb` and `pg_ctl`; there is no
+implicit Homebrew dependency.
 
 Useful infrastructure commands:
 
