@@ -30,6 +30,11 @@
     "report:outcomes": "tsx --env-file=.env scripts/report-outcomes.ts",
     "test:integration": "tsx scripts/test-postgres.ts",
     "test:workspace": "tsx --env-file=.env scripts/test-workspace-smoke.ts",
+    "test:e2e": "playwright test --project=chromium",
+    "test:e2e:all": "playwright test",
+    "test:e2e:headed": "playwright test --project=chromium --headed",
+    "test:e2e:typecheck": "tsc --noEmit -p tests/e2e/tsconfig.json",
+    "test:e2e:report": "playwright show-report playwright-report",
     "db:setup": "tsx --env-file=.env scripts/db-setup.ts",
     "dev:api": "tsx --env-file=.env apps/api/src/server.ts",
     "worker:outbox": "tsx --env-file=.env scripts/outbox-worker.ts",
@@ -43,6 +48,8 @@
     "zod": "4.6.4"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.63.0",
     "@types/node": "^24.0.0",
     "@types/pg": "8.23.1",
     "jsdom": "26.1.0",
