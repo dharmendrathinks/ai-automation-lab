@@ -151,21 +151,18 @@ describe('production Codex boundary (no live inference)', () => {
   });
   it('timeout kills stubborn descendants before releasing the invocation', async () => {
     const f =
-      await fake(`import {spawn} from 'node:child_process';import {writeFileSync} from 'node:fs';
-      const child=spawn(process.execPath,['-e','process.on("SIGTERM",()=>{});setInterval(()=>{},1000)'],{stdio:'ignore'});
-      writeFileSync(process.env.CODEX_HOME+'/child.pid',String(child.pid));process.on('SIGTERM',()=>{});setInterval(()=>{},1000);`);
+      await fake(`import {spawn} from 'node:child_process';
+      spawn(process.execPath,['-e','process.on("SIGTERM",()=>{});require("node:fs").writeFileSync(process.env.CODEX_HOME+"/child.pid",String(process.pid));setInterval(()=>{},1000)'],{stdio:'ignore'});
+      process.on('SIGTERM',()=>{});setInterval(()=>{},1000);`);
     const provider = new CodexProvider(f.executable, f.directory, {
-      timeoutMs: 500,
+      // Allow cold process startup under parallel unit-test load. The child
+      // records readiness only after installing its stubborn SIGTERM handler.
+      timeoutMs: 2000,
       killGraceMs: 100,
     });
-    const result = provider.classify(context);
-    const check = expect(result).rejects.toThrow('provider_timeout');
-    let pid = 0;
-    await vi.waitFor(async () => {
-      pid = Number(await readFile(join(f.directory, 'child.pid'), 'utf8'));
-      expect(pid).toBeGreaterThan(0);
-    });
-    await check;
+    await expect(provider.classify(context)).rejects.toThrow('provider_timeout');
+    const pid = Number(await readFile(join(f.directory, 'child.pid'), 'utf8'));
+    expect(pid).toBeGreaterThan(0);
     await vi.waitFor(() => {
       expect(() => process.kill(pid, 0)).toThrow();
     });

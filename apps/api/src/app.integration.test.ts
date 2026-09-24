@@ -68,6 +68,83 @@ afterAll(async () => {
 afterEach(() => vi.unstubAllGlobals());
 
 const clock = new Date('2026-09-13T00:00:00Z');
+test.each(['short', token])('automation credentials must be strong and distinct: %s', (n8nToken) => {
+  expect(() => buildApp({ db, token, n8nToken })).toThrow(/N8N_WEBHOOK_TOKEN/);
+});
+
+test('automation credentials cannot cross the operator boundary or forge approval fields', async () => {
+  const n8nToken = 'synthetic-automation-token-00000000000';
+  const scoped = buildApp({ db, token, n8nToken, now: () => clock });
+  try {
+    const c = await classifyAndPropose('I was charged twice this month.');
+    const automationHeaders = { authorization: `Bearer ${n8nToken}` };
+    for (const url of ['/api/v1/tickets', '/api/v1/approvals', '/api/v1/metrics/outcomes', '/readyz']) {
+      expect((await scoped.inject({ url, headers: automationHeaders })).statusCode).toBe(401);
+    }
+    for (const url of [
+      `/api/v1/approvals/${c.run.approvals[0].id}/decision`,
+      `/api/v1/tickets/${c.ticketId}/effort`,
+      '/api/v1/scenarios/false-success/start',
+      '/api/v1/wait-exercises',
+    ]) {
+      expect((await scoped.inject({ method: 'POST', url, headers: automationHeaders, payload: {} })).statusCode).toBe(401);
+    }
+    expect((await scoped.inject({ url: '/integrations/v1/customers/CUSTOMER-001/payments', headers: automationHeaders })).statusCode).toBe(200);
+    for (const extra of [{ reviewer: 'forged' }, { proposalHash: 'forged' }, { actionId: randomUUID() }, { amountMinor: 1 }]) {
+      expect((await scoped.inject({ method: 'POST', url: `/api/v1/approvals/${c.run.approvals[0].id}/decision`, headers, payload: { decision: 'approved', reason: 'Synthetic tampering check', ...extra } })).statusCode).toBe(400);
+    }
+    expect((await pool.query('SELECT status, reviewer FROM approvals WHERE id=$1', [c.run.approvals[0].id])).rows[0]).toEqual({ status: 'pending', reviewer: null });
+    expect((await pool.query('SELECT count(*)::int AS n FROM refunds')).rows[0].n).toBe(0);
+  } finally { await scoped.close(); }
+});
+
+test.each([
+  ['invalid reference', { customerRef: 'invalid reference' }],
+  ['long reference', { customerRef: 'x'.repeat(65) }],
+  ['empty message', { message: '' }],
+  ['blank message', { message: '   ' }],
+  ['long message', { message: 'x'.repeat(8001) }],
+])('scenario intake enforces the ticket contract: %s', async (_label, invalid) => {
+  const response = await app.inject({ method: 'POST', url: '/api/v1/scenarios/false-success/start', headers, payload: invalid });
+  expect(response.statusCode).toBe(400);
+  expect(await counts()).toEqual({ tickets: 0, runs: 0, audit: 0, outbox: 0 });
+});
+
+test('early verification cannot strand an authorized support action before its first execution', async () => {
+  const c = await classifyAndPropose();
+  const early = await app.inject({ method: 'POST', url: `/automation/v1/actions/${c.actionId}/verify`, headers });
+  expect(early.statusCode).toBe(409);
+  expect(early.json()).toEqual({ error: 'verification_not_ready' });
+  expect((await pool.query('SELECT status FROM proposed_actions WHERE id=$1', [c.actionId])).rows[0].status).toBe('ready');
+  expect((await app.inject({ method: 'POST', url: `/automation/v1/actions/${c.actionId}/execute`, headers })).statusCode).toBe(200);
+  const results = await Promise.all(Array.from({ length: 3 }, () => app.inject({ method: 'POST', url: `/automation/v1/actions/${c.actionId}/verify`, headers })));
+  expect(results.every((r) => r.json().outcome === 'verified')).toBe(true);
+  expect((await pool.query('SELECT count(*)::int AS n FROM ticket_messages WHERE action_id=$1', [c.actionId])).rows[0].n).toBe(1);
+});
+
+test('support verification rejects a matching message stored on the wrong ticket', async () => {
+  const c = await classifyAndPropose();
+  const other = (await post({ customerRef: 'CUSTOMER-002', message: 'Another synthetic ticket.' })).json();
+  await app.inject({ method: 'POST', url: `/automation/v1/actions/${c.actionId}/execute`, headers });
+  await pool.query('UPDATE ticket_messages SET ticket_id=$1 WHERE action_id=$2', [other.ticketId, c.actionId]);
+  const verified = await app.inject({ method: 'POST', url: `/automation/v1/actions/${c.actionId}/verify`, headers });
+  expect(verified.json()).toMatchObject({ outcome: 'failed', ticketResolution: 'open' });
+  expect((await pool.query('SELECT status FROM tickets WHERE id=$1', [c.ticketId])).rows[0].status).toBe('open');
+});
+
+test('verification between failed-before-commit and retry cannot strand the action', async () => {
+  const c = await classifyAndPropose();
+  await pool.query(`INSERT INTO scenario_instances (id,run_id,fixture_id,config,counters,created_at)
+    VALUES ($1,$2,'fail-before-commit','{"mode":"fail_before_commit","failAttempts":1}','{}',$3)`, [randomUUID(), c.runId, clock]);
+  const first = await app.inject({ method: 'POST', url: `/automation/v1/actions/${c.actionId}/execute`, headers });
+  expect(first.statusCode).toBe(500);
+  const early = await app.inject({ method: 'POST', url: `/automation/v1/actions/${c.actionId}/verify`, headers });
+  expect(early.json()).toEqual({ error: 'verification_not_ready' });
+  expect((await app.inject({ method: 'POST', url: `/automation/v1/actions/${c.actionId}/execute`, headers })).statusCode).toBe(200);
+  expect((await app.inject({ method: 'POST', url: `/automation/v1/actions/${c.actionId}/verify`, headers })).json().outcome).toBe('verified');
+  expect((await pool.query('SELECT count(*)::int AS n FROM ticket_messages WHERE action_id=$1', [c.actionId])).rows[0].n).toBe(1);
+});
+
 test('refund without eligible duplicate evidence escalates instead of stranding an open ticket', async () => {
   const created = (
     await post({

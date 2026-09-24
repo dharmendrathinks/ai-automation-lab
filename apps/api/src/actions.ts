@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import type { Database } from './db/index.js';
 import {
   actionAttempts,
@@ -26,6 +26,35 @@ const canonicalJson = (value: Record<string, unknown>) =>
       Object.entries(value).sort(([a], [b]) => a.localeCompare(b)),
     ),
   );
+
+// Called while holding the action lock. A read before execution must not turn a
+// ready action into a terminal failure. Receipts also cover direct integrations.
+async function requireExecutionEvidence(
+  db: ActionDatabase,
+  action: typeof proposedActions.$inferSelect,
+) {
+  const [attempt] = await db
+    .select({ id: actionAttempts.id })
+    .from(actionAttempts)
+    .where(and(
+      eq(actionAttempts.actionId, action.id),
+      inArray(actionAttempts.result, [
+        'committed', 'committed_response_lost', 'idempotent_replay',
+        'success_without_mutation',
+      ]),
+    ))
+    .limit(1);
+  if (attempt) return;
+  const [receipt] = await db
+    .select()
+    .from(operationReceipts)
+    .where(and(
+      eq(operationReceipts.operation, action.kind === 'refund' ? 'refund.create' : 'ticket.message.create'),
+      eq(operationReceipts.idempotencyKey, action.idempotencyKey),
+    ))
+    .limit(1);
+  if (!receipt) throw new Error('verification_not_ready');
+}
 
 export async function claimAction(
   db: ActionDatabase,
@@ -307,6 +336,7 @@ export async function verifyRefund(
       .where(eq(proposedActions.id, actionId))
       .for('update');
     if (!action || action.kind !== 'refund') return null;
+    await requireExecutionEvidence(tx, action);
     const parameters = action.parameters as {
       customerId: string;
       paymentId: string;
@@ -486,6 +516,7 @@ export async function verifyAction(
       .where(eq(proposedActions.id, actionId))
       .for('update');
     if (!action) return null;
+    await requireExecutionEvidence(db, action);
     const [scenario] = await db
       .select()
       .from(scenarioInstances)
@@ -614,19 +645,21 @@ export async function verifySupportResponse(
       .where(eq(proposedActions.id, actionId))
       .for('update');
     if (!action || action.kind !== 'support_response') return null;
+    await requireExecutionEvidence(tx, action);
     const [message] = await tx
       .select()
       .from(ticketMessages)
       .where(eq(ticketMessages.actionId, actionId));
     const expected = String(action.parameters.text ?? '');
-    const verified = Boolean(
-      message && message.text === expected && message.visibility === 'customer',
-    );
     const [run] = await tx
       .select()
       .from(automationRuns)
       .where(eq(automationRuns.id, action.runId));
     if (!run) return null;
+    const verified = Boolean(
+      message && message.ticketId === run.ticketId && message.text === expected &&
+      message.visibility === 'customer' && message.authorType === 'automation',
+    );
     const unresolved = Array.isArray(
       (run.decision as { unresolvedIssues?: unknown } | null)?.unresolvedIssues,
     )
@@ -660,7 +693,7 @@ export async function verifySupportResponse(
       runId: action.runId,
       outcome: verified ? 'verified' : 'failed',
       ticketResolution:
-        verified && unresolved.length === 0 ? 'resolved' : 'partial',
+        verified ? (unresolved.length === 0 ? 'resolved' : 'partial') : 'open',
     };
   });
 }
