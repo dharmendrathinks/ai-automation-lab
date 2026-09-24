@@ -323,3 +323,58 @@ test('load failures show a recoverable error state, not successful or zero metri
   );
   expect(document.querySelector('.metrics-grid')).toBeNull();
 });
+
+test('cancelled connection cannot reconnect the workspace after a late response', async () => {
+  let finish;
+  fetchMock.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+  click('#connect-button');
+  document.querySelector('#operator-token').value = operator;
+  submit('#connect-form');
+  click('[data-action="close-modal"]');
+  click('#connect-button');
+  finish(new Response(JSON.stringify({ ready: true }), { status: 200 }));
+  await tick();
+  expect(document.querySelector('#connect-button').textContent).toBe('Connect workspace');
+  expect(document.querySelector('#modal').open).toBe(true);
+  expect(fetchMock.mock.calls.filter(([url]) => url.startsWith('/api/'))).toHaveLength(0);
+});
+
+test('disconnect during loading clears busy state and ignores late private data', async () => {
+  await connect();
+  let finish;
+  fetchMock.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+  await navigate('tickets');
+  expect(document.querySelector('#main').getAttribute('aria-busy')).toBe('true');
+  click('#connect-button');
+  finish(new Response(JSON.stringify({ tickets: [ticket] }), { status: 200 }));
+  await tick();
+  expect(document.querySelector('#main').hasAttribute('aria-busy')).toBe(false);
+  expect(document.body.textContent).toContain('Good automation leaves evidence.');
+  expect(document.querySelector('#ticket-search')).toBeNull();
+});
+
+test('skip link focuses the workspace without changing the current route', async () => {
+  await connect();
+  await navigate('tickets');
+  click('.skip-link');
+  await tick();
+  expect(window.location.hash).toBe('#tickets');
+  expect(document.activeElement).toBe(document.querySelector('#main'));
+});
+
+test('a late ticket write cannot close a replacement dialog or navigate away', async () => {
+  await connect();
+  let finish;
+  fetchMock.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+  click('[data-action="new-ticket"]');
+  submit('#ticket-form');
+  click('[data-action="close-modal"]');
+  click('[data-action="new-ticket"]');
+  document.querySelector('#ticket-message').value = 'Keep this new draft.';
+  finish(new Response(JSON.stringify({ ticketId, runId }), { status: 201 }));
+  await tick();
+  expect(document.querySelector('#modal').open).toBe(true);
+  expect(document.querySelector('#ticket-message').value).toBe('Keep this new draft.');
+  expect(window.location.hash).not.toContain(ticketId);
+  expect(document.querySelector('#toast').textContent).toContain('Refresh');
+});

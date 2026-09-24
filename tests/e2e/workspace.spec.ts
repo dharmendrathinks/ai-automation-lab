@@ -1,6 +1,61 @@
 import { test, expect } from './fixtures.js';
 import { OPERATOR_TOKEN } from './support/constants.js';
 
+test('late readiness cannot reconnect a cancelled session or close a new dialog', async ({ ui, page }) => {
+  await ui.open();
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => { release = resolve; });
+  await page.route('**/readyz', async (route) => { await held; await route.continue(); });
+  const opener = page.getByRole('banner').getByRole('button', { name: 'Connect workspace', exact: true });
+  await opener.click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('Local operator token', { exact: true }).fill(OPERATOR_TOKEN);
+  const request = page.waitForRequest('**/readyz');
+  await dialog.getByRole('button', { name: /^Connect workspace/ }).click();
+  await request;
+  await page.keyboard.press('Escape');
+  await expect(dialog).not.toBeVisible();
+  await expect(opener).toBeFocused();
+  await opener.click();
+  const response = page.waitForResponse('**/readyz');
+  release();
+  expect((await response).status()).toBe(200);
+  await expect(dialog.getByLabel('Local operator token', { exact: true })).toHaveValue('');
+  await expect(dialog).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Disconnect', exact: true })).toHaveCount(0);
+  await page.unroute('**/readyz');
+  await page.keyboard.press('Escape');
+  await ui.connect();
+});
+
+test('disconnect during a pending read clears loading semantics and private content', async ({ ui, page }) => {
+  await ui.open();
+  await ui.connect();
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => { release = resolve; });
+  await page.route('**/api/v1/tickets', async (route) => { await held; await route.continue().catch(() => {}); });
+  await page.getByRole('navigation').getByRole('link', { name: /Tickets/ }).click();
+  await expect(page.getByRole('main')).toHaveAttribute('aria-busy', 'true');
+  await expect(page.getByRole('status').filter({ hasText: 'Loading workspace evidence' })).toBeVisible();
+  await page.getByRole('button', { name: 'Disconnect', exact: true }).click();
+  release();
+  await expect(page.getByRole('main')).not.toHaveAttribute('aria-busy', 'true');
+  await expect(page.getByRole('heading', { name: 'Good automation leaves evidence.' })).toBeVisible();
+  await expect(page.getByRole('table')).toHaveCount(0);
+});
+
+test('skip navigation preserves the active screen and moves keyboard focus to main', async ({ ui, page }) => {
+  await ui.open();
+  await ui.connect();
+  await ui.navigate('Tickets');
+  const skip = page.getByRole('link', { name: 'Skip to workspace', exact: true });
+  await skip.focus();
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/#tickets$/);
+  await expect(page.getByRole('main')).toBeFocused();
+  await expect(page.getByRole('heading', { name: 'Ticket workspace' })).toBeVisible();
+});
+
 test('welcome, invalid credentials, connection, logout and reload respect session boundaries', async ({
   ui,
   page,

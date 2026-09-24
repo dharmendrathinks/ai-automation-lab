@@ -922,6 +922,13 @@ label {
   gap: 10px;
   margin-bottom: 14px;
 }
+.message-header > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.message-header .avatar {
+  flex-shrink: 0;
+}
 .message-header strong {
   font-size: 12px;
   display: block;

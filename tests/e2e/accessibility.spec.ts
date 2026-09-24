@@ -26,9 +26,9 @@ async function accessible(page: Page) {
     )
     .toEqual([]);
 }
-async function capture(page: Page, info: TestInfo, name: string) {
+async function capture(page: Page, info: TestInfo, name: string, fullPage = true) {
   const path = info.outputPath(`${name}.png`);
-  await page.screenshot({ path, fullPage: true, animations: 'disabled' });
+  await page.screenshot({ path, fullPage, animations: 'disabled' });
   await info.attach(name, { path, contentType: 'image/png' });
 }
 
@@ -91,7 +91,7 @@ for (const name of [
     await ui.connect();
     await ui.navigate(name);
     await accessible(page);
-    for (const width of [1440, 1024, 390]) {
+    for (const width of [1440, 1024, 390, 320]) {
       await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
       await expect
         .poll(
@@ -146,6 +146,25 @@ test('populated ticket, conversation, run evidence and expanded audit are access
   await page.getByText('Full decision contract', { exact: true }).click();
   await accessible(page);
   await capture(page, info, 'run-evidence');
+});
+
+test('maximum-length unbroken content reflows at 320px in queue, conversation and evidence', async ({ ui, page, lab }, info) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await ui.open();
+  await ui.connect();
+  const message = 'x'.repeat(8000);
+  const created = await ui.ticket('custom', { message, customer: 'S'.repeat(64) });
+  await lab.waitFor(created.ticketId, (s) => s.ticket.status === 'human_follow_up', 'unresolved synthetic customer escalates');
+  await expect(page.getByText(message, { exact: true })).toBeVisible();
+  const noOverflow = async () => expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await noOverflow();
+  await capture(page, info, 'long-conversation-header-320', false);
+  await ui.inspectRun();
+  await noOverflow();
+  await ui.navigate('Tickets');
+  await noOverflow();
+  await capture(page, info, 'long-queue-320');
+  await accessible(page);
 });
 
 test('create and approval dialogs expose labeled controls and accessible frozen proposal details', async ({

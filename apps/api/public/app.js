@@ -84,6 +84,7 @@ async function api(path, options = {}) {
         'Reliability scenarios require fixture mode. No ticket was created.',
       not_found: 'This record was not found in the current local database.',
       invalid_request: 'Check the input and try again.',
+      verification_not_ready: 'This action has not executed yet. Wait for execution before reconciling.',
     };
     throw new Error(
       messages[payload.error] ??
@@ -304,7 +305,7 @@ function runPage() {
         : '<p class="muted small-text">No executable action was proposed. Inspect the policy route and escalation reason.</p>'
     }${actions.some((a) => a.businessOutcome === 'unknown') ? `<div class="notice warning"><p>Unknown is not failed and is not verified. Reconciliation reads destination state; it does not repeat the action.</p></div>${button('Reconcile outcome', 'reconcile', 'secondary')}` : ''}</section></div><div class="stack"><section class="panel"><h2>Structured decision</h2>${r.decision ? `<dl class="key-values compact"><dt>Intent</dt><dd>${e(humanize(r.decision.intent))}</dd><dt>Category</dt><dd>${e(humanize(r.decision.category))}</dd><dt>Recommendation</dt><dd>${e(humanize(r.decision.recommendedAction))}</dd><dt>Explanation</dt><dd>${e(r.decision.reason)}</dd></dl>${evidence('Full decision contract', r.decision)}` : `<p class="muted small-text">${latestJob?.status === 'failed' ? 'Provider failed. No decision is assumed.' : 'Waiting for orchestration to request a decision.'}</p>`}</section><section class="panel"><h2>Policy & approval</h2><dl class="key-values compact"><dt>Policy route</dt><dd>${e(humanize(policy?.route ?? 'pending'))}</dd><dt>Escalation</dt><dd>${e(humanize(r.escalationReason ?? 'none recorded'))}</dd></dl>${r.approvals.map((a) => `<div class="action-strip"><div><strong>Human review</strong><small>${e(humanize(effectiveApprovalStatus(a)))}</small></div><a class="text-link" href="#approvals">Review →</a></div>`).join('')}${policy ? evidence('Policy evaluation', policy) : ''}</section><section class="panel"><h2>Provider record</h2>${latestJob ? `<dl class="key-values compact"><dt>Provider</dt><dd>${e(latestJob.provider)}</dd><dt>Model</dt><dd class="mono">${e(latestJob.model)}</dd><dt>Duration</dt><dd>${e(duration(latestJob.durationMs))}</dd><dt>Status</dt><dd>${badge(latestJob.status)}</dd><dt>Error code</dt><dd>${e(latestJob.errorCode ?? 'None')}</dd></dl>${evidence('Recorded usage (null means unavailable)', latestJob.result?.usage ?? null)}` : '<p class="muted small-text">No provider call is recorded yet.</p>'}</section><section class="panel"><h2>Delivery & orchestration</h2><p class="muted small-text">Execution links are not available until actual n8n execution IDs are captured.</p>${evidence(
       'Outbox delivery',
-      r.events.map(({ payload, ...event }) => event),
+      r.events.map(({ payload: _payload, ...event }) => event),
     )}${evidence('Workflow claims', r.workflows)}${r.scenarios.length ? evidence('Persisted fault configuration', r.scenarios) : ''}</section></div></div>`
   );
 }
@@ -617,6 +618,7 @@ document.addEventListener('click', async (event) => {
 document.querySelector('#connect-button').addEventListener('click', () => {
   if (!state.connected) return connectDialog();
   controller?.abort();
+  main.removeAttribute('aria-busy');
   state.token = '';
   state.connected = false;
   state.tickets = [];
@@ -626,6 +628,10 @@ document.querySelector('#connect-button').addEventListener('click', () => {
   lastSnapshot = '';
   render();
   toast('Disconnected. The token has been cleared from this tab.');
+});
+document.querySelector('.skip-link').addEventListener('click', (event) => {
+  event.preventDefault();
+  main.focus();
 });
 document.addEventListener('input', (event) => {
   if (event.target.id !== 'ticket-search') return;
@@ -656,10 +662,17 @@ modal.addEventListener('submit', async (event) => {
   if (submit.disabled) return;
   submit.disabled = true;
   document.querySelector('#form-error').textContent = '';
+  const ownsDialog = () => {
+    if (form.isConnected && modal.open) return true;
+    toast('Request completed after the dialog closed. Refresh the workspace to inspect its result before retrying.');
+    return false;
+  };
   try {
     if (form.id === 'connect-form') {
-      state.token = String(data.get('token')).trim();
-      await api('/readyz');
+      const candidate = String(data.get('token')).trim();
+      await api('/readyz', { headers: { Authorization: `Bearer ${candidate}` } });
+      if (!form.isConnected || !modal.open) return;
+      state.token = candidate;
       state.connected = true;
       modal.close();
       await load();
@@ -672,6 +685,7 @@ modal.addEventListener('submit', async (event) => {
           message: String(data.get('message')).trim(),
         }),
       });
+      if (!ownsDialog()) return;
       modal.close();
       location.hash = routeLink('ticket', result.ticketId);
       toast(
@@ -709,6 +723,7 @@ modal.addEventListener('submit', async (event) => {
           }),
         },
       );
+      if (!ownsDialog()) return;
       modal.close();
       await load();
       toast('Effort observation saved with its measurement source.');
@@ -723,6 +738,7 @@ modal.addEventListener('submit', async (event) => {
           }),
         },
       );
+      if (!ownsDialog()) return;
       modal.close();
       await load();
       toast(
@@ -739,6 +755,7 @@ modal.addEventListener('submit', async (event) => {
           }),
         },
       );
+      if (!ownsDialog()) return;
       modal.close();
       location.hash = routeLink('run', result.runId);
       toast(
@@ -746,8 +763,11 @@ modal.addEventListener('submit', async (event) => {
       );
     }
   } catch (error) {
-    if (form.id === 'connect-form') state.token = '';
-    const output = document.querySelector('#form-error');
+    if (!form.isConnected || !modal.open) {
+      if (form.id !== 'connect-form') toast('The closed request did not confirm success. Refresh and inspect the workspace before retrying.');
+      return;
+    }
+    const output = form.querySelector('#form-error');
     if (output) output.textContent = error.message;
   } finally {
     submit.disabled = false;
