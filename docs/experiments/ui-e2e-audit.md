@@ -27,6 +27,33 @@ Current full-plan limitations are tracked in
 [implementation status](../IMPLEMENTATION_STATUS.md). Remote CI and physical
 devices remain unvalidated; automated axe checks are not screen-reader signoff.
 
+## September 24 clean-clone resource experiment
+
+The additional keyboard journeys passed independently in all four projects.
+A fresh local clone then passed Chromium, Firefox and WebKit, but the final
+mobile restart killed the disposable n8n process: Docker recorded exit **137**,
+`OOMKilled: true`. The VM exposed only **2,054,778,880 bytes** of RAM while also
+running the normal lab. The result was **132 passed, 4 failed**: restart readiness
+and three subsequent journeys depending on the stopped orchestrator. This was
+not a business-assertion failure and was not counted as a passing matrix.
+
+The test stack now supplies fixed V8 old-space budgets (n8n 512 MiB, API 256 MiB)
+with a harness regression assertion. Production configuration, workflow logic,
+timeouts and retries are unchanged. The normal stack and VM settings were left
+untouched. These heap limits do not replace the documented free-memory guidance.
+
+Rerun at local commit `d26ad1e`: **136 passed in 4.5 minutes**, 34 per project,
+with no skips or retries. All four persisted-Wait restart exercises passed and
+the disposable services/volumes were removed. The local clone contained no
+`.env` or `.local` credentials, used a fresh frozen-lockfile install, and passed
+35 tests against its own PostgreSQL 18.6 container. Browser driver and database
+test process used host Node 26.5.0; the backend used pinned Node 24.21.0. This is
+local ARM64 evidence, not remote CI or screen-reader signoff.
+
+A separate clean-clone run inside pinned Node **24.21.0** passed all **59**
+unit/DOM/process/corpus/harness tests, both type checks and build. The local
+driver's newer Node therefore was not the only unit/build validation environment.
+
 ## Reproduce
 
 Follow [UI testing setup](../guides/UI_TESTING.md), then run:
@@ -36,8 +63,10 @@ pnpm test:e2e
 pnpm test:e2e:report
 ```
 
-There are 30 scenarios per browser project: 14 business journeys, 8 workspace
-interaction/security checks, and 8 accessibility/layout checks. The actual
+The original audit had 30 scenarios per browser project. The current suite has
+34: 15 business journeys, 8 workspace interaction/security checks, 8
+accessibility/layout checks, 2 keyboard-only journeys and 1 native Wait recovery
+exercise. The actual
 backend, PostgreSQL and imported n8n workflows run in a disposable stack.
 All data is synthetic and all inference uses `FixtureProvider`; no live model
 account, real money, or developer credentials are involved.

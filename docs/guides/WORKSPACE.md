@@ -89,7 +89,8 @@ success (failed verification/zero messages), and unavailable verification
 
 The subsequent [browser test suite](UI_TESTING.md) now exercises real journeys,
 keyboard interactions, accessibility and 1440/1024/390px layouts, with screenshot
-evidence. Its [audit](../experiments/ui-e2e-audit.md) records failing product
-contracts and a local Firefox launch limitation. Fix those regressions and
-complete manual visual/screen-reader review before presenting this as a polished
-release. This is not a full plan-completion signoff.
+evidence. Its [audit](../experiments/ui-e2e-audit.md) preserves the original failures
+and their repaired, passing results, including Firefox. The
+[release-signoff checklist](RELEASE_SIGNOFF.md) separates those automated results
+from human-effort observations, screen-reader review and remote CI evidence.
+This is not a full plan-completion signoff.

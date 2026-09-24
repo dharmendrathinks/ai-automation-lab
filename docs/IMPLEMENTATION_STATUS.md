@@ -37,8 +37,9 @@ tests. No production code was changed in this test-only pass.
 ### September 24 blocker remediation (supersedes the audit failures above)
 
 - Reconciliation, native validation, contrast and Firefox launch are fixed. The
-  expanded **128-test browser matrix passes**; coverage adds effort entry,
-  effort-dialog accessibility and real n8n persisted-Wait restart/replay.
+  expanded **136-test browser matrix passes**; coverage adds effort entry,
+  effort-dialog accessibility, keyboard-only support/refund journeys and real
+  n8n persisted-Wait restart/replay.
 - Human-effort capture is implemented through ticket detail and existing audit
   records. Cumulative observations carry provenance, completeness and matched
   baseline evidence; tests cover partial coverage, stale observations, negative
@@ -55,10 +56,18 @@ tests. No production code was changed in this test-only pass.
   held-out. It reports the splits separately with a corpus hash and explicit
   quality gate, not the historical repeated-example score.
 
-Local validation: **58 unit/DOM/process/corpus tests, 35 isolated PostgreSQL
-tests, 128 browser-stack tests**, build, application/E2E type checks and diff
+Local validation: **59 unit/DOM/process/corpus/harness tests, 35 isolated PostgreSQL
+tests, 136 browser-stack tests**, build, application/E2E type checks and diff
 whitespace checks pass. CI now also runs the database regression suite; remote
 execution has not been claimed. All commits remain local and tags are unchanged.
+
+The final local-clone rehearsal at `d26ad1e` had no `.env` or `.local` credentials
+and used a fresh locked install. The full matrix passed in **4.5 minutes** after
+bounding disposable runtime heaps; the preceding OOM failure is preserved in the
+[audit](experiments/ui-e2e-audit.md). PostgreSQL tests now default to their own
+pinned 18.6 Docker container, removing the implicit Homebrew dependency. The
+baseline command no longer targets the normal lab database. No architecture,
+workflow, shared VM or normal-service configuration changed.
 
 Remaining evidence/signoff gates:
 
@@ -72,7 +81,14 @@ Remaining evidence/signoff gates:
   Capability and synthetic arithmetic are tested; real productivity is unproven.
 - Complete human visual/screen-reader signoff. Screenshots have been inspected
   and automated axe/keyboard/viewport checks run, but this is not accessibility
-  certification. Remote CI and x86/emulated Docker remain unvalidated.
+  certification.
+- Remote CI remains unverified: the maintainer explicitly requested that all
+  commits stay local. No push, remote workflow dispatch, merge, visibility change
+  or release is authorized. Native ARM64 is the planned platform; x86/emulation
+  is not a release requirement.
+
+The [release-signoff checklist](guides/RELEASE_SIGNOFF.md) gives the observation
+protocol and human review steps. Automated tests cannot supply those signoffs.
 
 No historical tag was changed and no new milestone-completion tag is warranted.
 

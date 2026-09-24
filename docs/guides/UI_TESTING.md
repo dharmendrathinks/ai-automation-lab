@@ -34,6 +34,11 @@ volumes, and a dynamically assigned loopback port. It migrates and seeds that
 database, imports the reviewed workflows, runs the browser tests, then removes
 only its own containers/volumes. An existing RelayDesk stack can stay running.
 Each test gets a fresh browser context and a clean synthetic business baseline.
+The disposable n8n/API processes have fixed V8 old-space budgets of 512/256 MiB;
+these are not total-container memory limits. Leave sufficient Docker VM memory
+for both stacks. A container exit 137 with `OOMKilled: true` is a resource failure,
+not proof that outcome verification passed or failed. Do not hide it with retries
+or stop an unrelated development stack to make a check green.
 
 ## Useful commands
 
