@@ -17,7 +17,12 @@ pnpm test:e2e --grep 'invoice ticket'
 Docker with Compose is required. The pinned services use ARM64; see the
 [browser testing guide](docs/guides/UI_TESTING.md) for supported setup, cross-browser
 commands, screenshots, isolation, and troubleshooting. For fast feedback without
-Docker, run `pnpm test` and `pnpm typecheck`.
+Docker, run `pnpm lint`, `pnpm test` and `pnpm typecheck`.
+
+`pnpm lint` runs pinned Oxlint correctness rules with warnings treated as errors.
+Strict TypeScript checks remain separate. Generated builds, dependencies and
+local runtime/test artifacts are excluded; production and test source are not.
+Use narrow, explained suppressions only for a demonstrated tool/API constraint.
 
 ## Add a regression test
 
@@ -38,7 +43,7 @@ Docker, run `pnpm test` and `pnpm typecheck`.
 
 - [ ] Explain the problem and expected/observed behavior; include reproduction.
 - [ ] Follow `PLAN.md`, `AGENTS.md`, and `docs/REPOSITORY_WORKFLOW.md` boundaries.
-- [ ] Relevant tests pass: `pnpm test`, `pnpm typecheck`, `pnpm test:e2e:typecheck`,
+- [ ] Relevant checks pass: `pnpm lint`, `pnpm test`, `pnpm typecheck`, `pnpm test:e2e:typecheck`,
       `pnpm build`, and the browser journeys affected by the change.
 - [ ] Check keyboard, narrow screens, empty/loading/error states for UI changes.
 - [ ] Keep fixtures and live-AI results distinct; no invented savings or outcomes.

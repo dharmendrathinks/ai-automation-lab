@@ -222,6 +222,7 @@ export const test = base.extend<
         : launchOptions,
     );
   },
+  // oxlint-disable-next-line no-empty-pattern -- Playwright requires destructured fixture dependencies; this fixture has none.
   baseURL: async ({}, use) => {
     const url = process.env.RELAYDESK_E2E_BASE_URL;
     if (!url || !/^http:\/\/127\.0\.0\.1:\d+$/.test(url))

@@ -1,0 +1,10 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "categories": { "correctness": "error" },
+  "rules": { "no-debugger": "error", "no-unused-vars": "error" },
+  "env": { "node": true },
+  "overrides": [
+    { "files": ["apps/api/public/*.js"], "env": { "browser": true, "node": false } }
+  ],
+  "ignorePatterns": ["node_modules/**", "dist/**", "coverage/**", ".local/**", "test-results/**", "playwright-report/**"]
+}
