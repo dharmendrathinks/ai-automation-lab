@@ -2,6 +2,26 @@
 
 Date: 2026-09-18
 
+Production-boundary remediation: 2026-09-24. The frozen feasibility spike was
+not reopened and the CLI/model pins remain unchanged. `providers.test.ts` now
+exercises the production adapter, not just the spike: exact version preflight,
+malformed JSONL/final output, missing completion, unknown events, tool rejection,
+input/output caps, quota/auth/rate failures, queued cancellation, deadlines and
+stubborn descendant cleanup. Temporary files are removed after process closure;
+errors retain sanitized codes, never raw stderr or reasoning.
+
+Database-backed tests serialize classification per run across API callers,
+persist each attempt, allow one invalid-output retry and then record an explicit
+backend safety escalation (not a model prediction). Replays reuse the stored
+decision. Bounded inference holds a PostgreSQL row lock; a process/connection
+loss releases it. This does not promise exactly-once hosted billing after a
+crash between a remote response and local commit. No broker was added. Failed
+attempt usage can be unavailable and reports disclose partial coverage.
+
+These are offline regression results. A fresh held-out live evaluation remains
+pending explicit allowance approval; historical model evidence below is not a
+new run of the hardened adapter. Public CI stays fixture-only.
+
 Status: **GO — bounded live runtime approved for explicit local opt-in**
 
 Milestone 6 supplied the concrete integration need allowed by decision 0001. The

@@ -7,22 +7,37 @@ Authentication: isolated ChatGPT login; no API key
 
 ## Reproduction
 
+September 24 corpus revision `triage-v2`: **20 development + 80 distinct held-out
+tickets**, checked in under `fixtures/evaluation/`. The held-out labels were
+specified before running this new cohort. It has not yet been run live; do not
+carry the historical repeated-cohort score forward as held-out accuracy.
+
+The opt-in commands below consume the dedicated local Codex allowance. They do
+not use an API-key fallback. Output includes the corpus hash, separate split
+scores, category/intent/allowed-action accuracy, escalation precision/recall,
+invalid output/provider failures, latency median/p95, token usage and unknown
+monetary cost. Errors count against the planned denominator. The 100-case command
+fails its gate unless all 80 held-out cases complete, category accuracy is at
+least 90%, allowed-action accuracy at least 85%, required-escalation recall 100%
+and there are no provider failures. No business actions are executed by this
+recommendation evaluation; verified outcomes require the separate workflow.
+
 ```sh
-LAB_CODEX_BIN="$(command -v codex)" \
+LAB_CODEX_LIVE=1 LAB_CODEX_BIN="$(command -v codex)" \
 LAB_CODEX_HOME="$PWD/.local/codex-runtime" \
 pnpm evaluate:live-ai -- 20
 
-LAB_CODEX_BIN="$(command -v codex)" \
+LAB_CODEX_LIVE=1 LAB_CODEX_BIN="$(command -v codex)" \
 LAB_CODEX_HOME="$PWD/.local/codex-runtime" \
 pnpm evaluate:live-ai -- 100
 ```
 
-The fixed 20-case cohort covers invoice downloads, suspected duplicate charges,
+The historical fixed 20-case cohort covered invoice downloads, suspected duplicate charges,
 ambiguous charges, account mismatches, general requests, unresolved customers
 and prompt-injection attempts. The 100-call cohort repeats those cases five times
 to expose nondeterminism; it is not 100 independent business scenarios.
 
-## Actual results
+## Historical actual results (September 18; repeated corpus)
 
 The first 20-case run, before the bounded task semantics were stated, produced
 8/20 exact matches. The model frequently recommended replies for unsupported

@@ -34,19 +34,42 @@ cannot launch locally. See the [browser audit](experiments/ui-e2e-audit.md) for
 reproduction and limitations. Unit/DOM/harness coverage now totals 40 passing
 tests. No production code was changed in this test-only pass.
 
-Remaining release gates identified by review:
+### September 24 blocker remediation (supersedes the audit failures above)
 
-- Fix the browser regressions above, validate Firefox, and complete manual
-  visual/screen-reader QA. Real screenshots and automated viewport/keyboard
-  checks now exist; they do not establish full accessibility or visual signoff.
-- Complete observed human-effort/review measurements and a justified savings
-  calculation; current report correctly declines that claim.
-- Production live-provider hardening to match all frozen harness guarantees,
-  including malformed output, cancellation/process cleanup, and version checks.
-- Broader concurrency/recovery acceptance coverage, including native Wait callback
-  state races and expiry; historical happy-path evidence alone is insufficient.
-- A genuinely expanded held-out live cohort: 100 calls over repeated examples
-  are not 100 independent held-out fixtures.
+- Reconciliation, native validation, contrast and Firefox launch are fixed. The
+  expanded **128-test browser matrix passes**; coverage adds effort entry,
+  effort-dialog accessibility and real n8n persisted-Wait restart/replay.
+- Human-effort capture is implemented through ticket detail and existing audit
+  records. Cumulative observations carry provenance, completeness and matched
+  baseline evidence; tests cover partial coverage, stale observations, negative
+  savings, idempotency and fixture/live separation. No human labor was fabricated.
+- Production provider tests now cover version preflight, malformed/oversized
+  output, tool rejection, sanitized errors, queued cancellation, timeout,
+  descendant cleanup and credential-environment isolation. Classification is
+  serialized per run, invalid output retries once, and failure safely escalates.
+- Execution is serialized per action with a persisted three-attempt limit;
+  refund parameters/policy/payment evidence are revalidated. Concurrent refunds,
+  competing actions, changed payloads, expiry persistence, Wait callback loss,
+  terminal-state races and retry budgets have database regression tests.
+- The evaluation corpus is now 100 distinct tickets: 20 development and 80
+  held-out. It reports the splits separately with a corpus hash and explicit
+  quality gate, not the historical repeated-example score.
+
+Local validation: **58 unit/DOM/process/corpus tests, 35 isolated PostgreSQL
+tests, 128 browser-stack tests**, build, application/E2E type checks and diff
+whitespace checks pass. CI now also runs the database regression suite; remote
+execution has not been claimed. All commits remain local and tags are unchanged.
+
+Remaining evidence/signoff gates:
+
+- Run the new held-out **live** cohort after explicit allowance approval. No new
+  hosted inference was made during this remediation. Offline provider tests do
+  not prove present live availability or held-out model quality.
+- Gather actual matched manual/automation-assisted human-time observations.
+  Capability and synthetic arithmetic are tested; real productivity is unproven.
+- Complete human visual/screen-reader signoff. Screenshots have been inspected
+  and automated axe/keyboard/viewport checks run, but this is not accessibility
+  certification. Remote CI and x86/emulated Docker remain unvalidated.
 
 No historical tag was changed and no new milestone-completion tag is warranted.
 

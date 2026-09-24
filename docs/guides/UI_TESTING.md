@@ -4,10 +4,10 @@ The UI suite uses **real browsers, the actual RelayDesk backend, PostgreSQL, and
 the checked-in n8n workflows**. Successful journeys do not mock business APIs,
 call a model, or bypass approval by inserting a resolved ticket.
 
-The suite currently exposes known product failures; see the
-[dated browser audit](../experiments/ui-e2e-audit.md). A nonzero exit is expected
-until those defects are fixed. Do not mistake passing unit tests for a green UI
-release gate.
+The original product failures have been repaired; see the before/after
+[dated browser audit](../experiments/ui-e2e-audit.md). A nonzero exit is a regression
+to investigate, not an expected result. Do not mistake passing unit tests for a
+green UI release gate.
 
 ## First run
 
@@ -54,7 +54,9 @@ pnpm test:e2e:typecheck
 pnpm test:e2e:report
 ```
 
-Tests use retrying assertions and observed states, not arbitrary sleeps. Test
+Tests use retrying assertions and observed states. The native restart exercise
+uses explicit bounded callback backoff (one, two, then three seconds), matching
+its persisted retry budget; it does not mask a failed assertion with a delay. Test
 retries are disabled so intermittent failures stay visible. One worker owns the
 resettable test database; do not override `--workers` without adding genuine
 worker-level database isolation. `--repeat-each=2` is useful for repeatability.
@@ -73,6 +75,8 @@ worker-level database isolation. `--repeat-each=2` is useful for repeatability.
 | False success         | Successful simulated API response does not hide failed destination verification                                 |
 | Unknown outcome       | Unknown stays visible; UI reconciliation verifies without another execution                                     |
 | Economics             | Human-approved completion is not fully automated; fixture/live cohorts separate; absent effort/cost remain N/A  |
+| Effort entry          | Real form validates total/review minutes; synthetic snapshots remain separate from operator-reported labor     |
+| Native Wait recovery  | Real waiting execution survives n8n restart; approval/callback races and duplicate replay remain safe         |
 | Session/security      | Invalid token, logout/reload, no stored credentials, escaped hostile text, restrictive CSP, private API auth    |
 | Interaction           | Native validation, search/filters, empty/error views, deep links, retained input after write failure            |
 | Accessibility/layout  | Axe WCAG A/AA checks, keyboard dialog focus/Escape, 1440/1024/390px overflow checks, screenshot evidence        |
@@ -82,6 +86,10 @@ and security boundaries. Only error-transport tests intercept responses; they
 simulate a failure, not a successful business result. `accessibility.spec.ts`
 checks semantics/layout and captures actual screenshots. Browser engines are
 Chromium, Firefox, and WebKit, plus mobile Chromium emulation (not a real device).
+There are 32 cases per project, 128 in the full matrix. `recovery.spec.ts` is an
+API/database/orchestration test alongside the UI journeys; it does not pretend a
+Wait exercise has a dedicated UI. Three workflows are imported. On macOS only,
+Firefox gets a disposable app-data directory to avoid touching personal profiles.
 
 The independent oracle reads SQL business records through a **test-only** server
 entry point. UI mutation steps still use the real forms and production API routes.

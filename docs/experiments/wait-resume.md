@@ -22,6 +22,28 @@ kept behind the authenticated backend endpoint.
 
 ## Reproduction and actual result
 
+September 24 remediation adds a disposable-stack command that does not restart
+or truncate the developer's normal environment:
+
+```sh
+pnpm test:e2e --grep 'native n8n wait'
+pnpm test:integration
+```
+
+The real n8n test passes approval-before-registration, persisted waiting state,
+container restart, readiness recovery, concurrent callbacks and harmless replay.
+The initial test exposed rejection of n8n's signed resume query; validation now
+accepts only the pinned origin/path and optional single 64-hex signature. The
+resume URL is absent from operator approval/replay responses as well as reads.
+Callback retries have a persisted five-attempt budget and timed backoff in the
+restart experiment. Database tests cover late/lost responses without regressing
+completion, expiry committed before conflict, and duplicate completion races.
+This is real restart evidence plus separately simulated transport-loss evidence,
+not a claim to cover every host/network failure.
+
+The older command below operates on the **normal local lab**, truncates its
+Wait exercises and restarts its n8n container. Use only disposable synthetic data.
+
 ```sh
 pnpm run setup
 pnpm test:wait-resume
@@ -42,4 +64,3 @@ restart and later `success`. RelayDesk retained callback-attempt counts and the
 authoritative completed state. No business action is attached to this teaching
 exercise; the established outbox/approval/action pattern remains the production
 design.
-

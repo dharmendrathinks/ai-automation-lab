@@ -2,6 +2,49 @@
 
 Historical experiment: 2026-09-18. Reporting correction: 2026-09-23.
 
+## Human-effort measurement — September 24 remediation
+
+Ticket detail → **Record effort** now records a cumulative observation in the
+existing audit trail. Choose **Operator-reported observation** only for actual
+timed work; the default is **Synthetic teaching example**. Include triage,
+review, exception handling and recovery in total active minutes. Review minutes
+are a subset, not an additional total. Approval turnaround remains elapsed time.
+
+Supply the measurement method/scope and optionally a comparable manual-only
+baseline with a reference and **measured** or **synthetic** provenance. Mark the
+snapshot complete only after accounting for all work. Subsequent audited work
+invalidates that completeness assertion; record a new cumulative snapshot.
+Repeated submission of the same observation ID is idempotent, not extra effort.
+The API is `POST /api/v1/tickets/:id/effort`, operator-authenticated; its strict
+contract is in `apps/api/src/effort.ts`.
+
+Run `pnpm report:outcomes` after recording observations. It separates fixture/live
+cohorts and operator-reported/synthetic observations, reports coverage, retains
+negative savings, and keeps cohort minutes N/A until every ticket is covered.
+Matched savings require a verified resolution, complete effort and a baseline.
+Recorded nonzero operator effort excludes a ticket from full automation, even
+without an approval. Self-reported observations are not independently certified.
+
+Reproducible arithmetic experiment (no live inference or measured labor):
+
+```sh
+pnpm test:integration
+pnpm test:e2e --grep 'effort entry'
+```
+
+The database test verifies six synthetic active minutes including one review
+minute against a five-minute synthetic baseline: **−1 minute**, not savings.
+Synthetic examples never populate measured-labor totals. It separately tests
+the operator-report contract using explicitly simulated data, partial coverage,
+snapshot replacement and invalidation. These are software tests, not human-time
+observations. Actual productivity remains unproven until a person supplies
+matched manual and automation-assisted observations on the declared cohort.
+
+No analytics service, new metrics table, fabricated dollar price, or architecture
+change was introduced.
+
+## Historical outcome evidence
+
 The historical values below describe the original experiment, not a current
 release signoff. The report now includes pending/failed tickets and shares the
 dashboard's mode-separated definitions. It no longer infers zero human effort

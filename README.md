@@ -29,10 +29,11 @@ failure, committed-but-lost response, false success, unknown outcomes, restart
 and safe reconciliation without duplicate refunds.
 
 The same n8n workflows now use a backend-selected provider without knowing Codex
-details. A 100-call live evaluation produced 90% exact structured matches and
+details. A historical 100-call evaluation over 20 repeated examples produced 90% exact structured matches and
 100% outcome-equivalent safe routing; a live supported ticket was resolved only
 after destination read-back verification. Provider monetary cost was unavailable
-and is not invented.
+and is not invented. The new 20-development/80-held-out evaluation has not yet
+been run; the historical result is not its score.
 
 ## Development
 
@@ -76,8 +77,10 @@ LAB_SYNTHETIC_MANUAL_SUPPORT_MINUTES=5 pnpm report:outcomes
 ```
 
 The report answers whether verified automation occurred and exposes missing human
-effort or cost evidence as `null`, never as zero. A supplied baseline estimates
-minutes, not dollar savings.
+effort or cost evidence as `null`, never as zero. Record cumulative active effort
+from ticket detail, with its source and matched baseline. Synthetic examples are
+kept separate from operator-reported work. A baseline alone cannot establish
+savings; see the [measurement protocol](docs/experiments/outcome-effort-report.md).
 
 ## Project guides
 

@@ -1,8 +1,31 @@
 # Browser contract audit — 2026-09-24
 
-Status: **release gate failing**. This pass adds tests, a disposable harness,
-contributor documentation, and CI only. Production UI/backend code is unchanged.
-It is not a milestone-completion claim.
+Status: **original browser blockers repaired**. The initial test-only audit below
+is preserved as before-state evidence. The subsequent remediation changes product
+code and does not, by itself, establish full-plan completion.
+
+## Remediation
+
+- Empty reconciliation POSTs no longer advertise a JSON body they do not send.
+- Customer-reference patterns escape the hyphen under modern HTML validation.
+- Muted text now meets the automated AA contrast checks on tested backgrounds.
+- macOS Firefox receives its own disposable `MOZ_APP_DATA` directory; personal
+  profiles and permissions are untouched. The independent launch and original
+  **120-test matrix passed** after this fix (30 per project, no skips/retries).
+- Added effort-entry provenance/negative-savings checks and a real persisted n8n
+  restart/callback exercise: the expanded suite has **128 tests**, 32 per project.
+
+Expanded run: **128 passed in 5.9 minutes**, no skips or test retries: Chromium
+32/32, Firefox 32/32, WebKit 32/32, mobile Chromium 32/32. This includes the real
+n8n restart exercise in every project. The disposable stack was removed and the
+existing lab left untouched. The accompanying 58 unit/DOM/process/corpus tests,
+35 isolated PostgreSQL tests, build and both type checks pass.
+
+The Firefox fix follows the observed macOS direct-execution failure discussed in
+[Mozilla issue 2069536](https://bugzilla.mozilla.org/show_bug.cgi?id=2069536).
+Current full-plan limitations are tracked in
+[implementation status](../IMPLEMENTATION_STATUS.md). Remote CI and physical
+devices remain unvalidated; automated axe checks are not screen-reader signoff.
 
 ## Reproduce
 
@@ -19,7 +42,7 @@ backend, PostgreSQL and imported n8n workflows run in a disposable stack.
 All data is synthetic and all inference uses `FixtureProvider`; no live model
 account, real money, or developer credentials are involved.
 
-## Observed results
+## Initial observed results (before remediation)
 
 Local macOS ARM64, Playwright 1.63.0, axe-core integration 4.13.0:
 
@@ -98,7 +121,7 @@ Screenshots cover 1440, 1024 and 390px plus populated conversations, run evidenc
 and approval dialogs. These are review artifacts, not approved pixel-diff
 baselines. Automated checks do not replace screen-reader or visual review.
 
-## Release decision
+## Initial release decision (superseded for the repaired browser defects)
 
 Keep these regressions failing until the product is fixed, then rerun the full
 matrix and investigate Firefox independently. Do not advertise a green browser
