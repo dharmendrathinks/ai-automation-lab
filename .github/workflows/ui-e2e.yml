@@ -3,7 +3,7 @@ name: UI end-to-end
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, feat/automation-foundation]
   workflow_dispatch:
 
 # Fork PRs need no repository secrets and cannot write to the repository.
