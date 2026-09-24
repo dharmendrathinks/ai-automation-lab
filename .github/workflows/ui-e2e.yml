@@ -1,0 +1,53 @@
+name: UI end-to-end
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Fork PRs need no repository secrets and cannot write to the repository.
+permissions:
+  contents: read
+
+concurrency:
+  group: ui-e2e-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser-contracts:
+    # Match the repository's existing ARM64-pinned PostgreSQL/n8n/Node images.
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .node-version
+      - name: Install locked test dependencies
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.30.1 --activate
+          pnpm install --frozen-lockfile
+      - name: Static and deterministic checks
+        run: |
+          pnpm typecheck
+          pnpm test:e2e:typecheck
+          pnpm test
+          pnpm build
+      - name: Install browser engines
+        run: pnpm exec playwright install --with-deps chromium firefox webkit
+      - name: Test real UI, PostgreSQL and n8n
+        run: pnpm test:e2e:all
+      - name: Retain synthetic-only browser evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ui-e2e-evidence
+          path: |
+            playwright-report/
+            test-results/e2e/
+          retention-days: 7
+          if-no-files-found: ignore

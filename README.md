@@ -82,6 +82,8 @@ minutes, not dollar savings.
 ## Project guides
 
 - [Architecture and implementation plan](PLAN.md)
+- [Contributing](CONTRIBUTING.md)
+- [Real-browser end-to-end testing](docs/guides/UI_TESTING.md)
 - [Implementation status and evidence](docs/IMPLEMENTATION_STATUS.md)
 - [Repository workflow and evidence](docs/REPOSITORY_WORKFLOW.md)
 - [Video checkpoints](docs/VIDEO_CHECKPOINTS.md)

@@ -26,11 +26,19 @@ Validation: 32 unit/DOM tests, 21 isolated database tests, build, and typecheck;
 the real n8n workspace smoke also passed all five support/lab paths. Details are
 in the workspace guide. This does not close the remaining gates below.
 
+The subsequent test-only pass adds 30 real-browser scenarios per project with
+isolated PostgreSQL/n8n, an independent SQL oracle, contributor setup and CI.
+Chromium, WebKit and mobile Chromium each pass 20 and fail 10; the failures expose
+contrast, customer-reference validation and UI reconciliation defects. Firefox
+cannot launch locally. See the [browser audit](experiments/ui-e2e-audit.md) for
+reproduction and limitations. Unit/DOM/harness coverage now totals 40 passing
+tests. No production code was changed in this test-only pass.
+
 Remaining release gates identified by review:
 
-- Real-browser visual, responsive, keyboard, and accessibility QA. The automated
-  browser/native bridge was unavailable during this pass; DOM tests are not a
-  substitute for screenshot verification.
+- Fix the browser regressions above, validate Firefox, and complete manual
+  visual/screen-reader QA. Real screenshots and automated viewport/keyboard
+  checks now exist; they do not establish full accessibility or visual signoff.
 - Complete observed human-effort/review measurements and a justified savings
   calculation; current report correctly declines that claim.
 - Production live-provider hardening to match all frozen harness guarantees,

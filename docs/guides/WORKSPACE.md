@@ -87,8 +87,9 @@ pre-commit failure and lost response (two attempts/one message each), false
 success (failed verification/zero messages), and unavailable verification
 (unknown, then verified via reconciliation/one message). No live model was called.
 
-Before presenting this as a polished release, still perform real-browser QA at
-1440px, 1024px, and 390px: check overflow, dialog focus/Escape, keyboard-only
-navigation, screen-reader labels, all empty/error states, and text contrast.
-Browser access was unavailable during the implementation pass; no screenshot or
-visual-accessibility pass is claimed. This is not a full plan-completion signoff.
+The subsequent [browser test suite](UI_TESTING.md) now exercises real journeys,
+keyboard interactions, accessibility and 1440/1024/390px layouts, with screenshot
+evidence. Its [audit](../experiments/ui-e2e-audit.md) records failing product
+contracts and a local Firefox launch limitation. Fix those regressions and
+complete manual visual/screen-reader review before presenting this as a polished
+release. This is not a full plan-completion signoff.
