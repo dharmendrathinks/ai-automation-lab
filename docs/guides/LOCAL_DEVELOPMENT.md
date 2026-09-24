@@ -1,8 +1,8 @@
 # Local development
 
-Status: **milestone 5 complete**, **FIXTURE MODE**. Live inference remains
-disabled. The imported foundation workflow checks installation and networking;
-Workflow A performs deterministic triage and backend policy evaluation.
+Default: **FIXTURE MODE**; live inference is explicit opt-in. Implementation is
+not yet a full plan-completion signoff; see [current release gates](../IMPLEMENTATION_STATUS.md).
+For ticket intake and the product UI, start with the [workspace guide](WORKSPACE.md).
 
 ## Prerequisites and one-time setup
 
@@ -68,6 +68,9 @@ escalated with an explicit reason.
 in the simulated destination, verifies the action and ticket resolution, and
 proves replay does not create another message. Open `http://127.0.0.1:3001/dashboard`
 while `pnpm dev` is running to inspect a run timeline with the local operator token.
+For interactive tickets, also run `pnpm worker:outbox` in a separate terminal.
+The dashboard supports ticket intake, conversation/run detail, human review,
+reliability experiments, and mode-separated outcome views.
 
 `pnpm test:refund` proves no approval means no refund, rejects approval with the
 n8n credential, approves one exact synthetic proposal as the local reviewer, and
@@ -101,7 +104,8 @@ After any workflow demo, run:
 pnpm report:outcomes
 ```
 
-The report groups fixture and live jobs separately and derives automation,
+The report groups fixture and live ticket cohorts separately, including pending
+and failed work, and derives automation,
 escalation, verified completion, handling time, provider latency and available
 usage from existing PostgreSQL records. Missing active-human-effort or monetary
 cost evidence is `null`/N/A.
@@ -114,7 +118,8 @@ LAB_SYNTHETIC_MANUAL_SUPPORT_MINUTES=5 pnpm report:outcomes
 ```
 
 That value is configurable and synthetic. It is not measured labor and is never
-converted into dollar savings.
+converted into dollar savings. It cannot establish minutes saved without observed
+human-effort evidence; current savings estimates remain null.
 
 ## Persisted wait/resume exercise
 
@@ -153,7 +158,8 @@ state is intentionally not automated yet.
 
 ## API and synthetic fixture
 
-The server binds to `127.0.0.1:3001`. `/healthz` is public; all other endpoints
+The server binds to `127.0.0.1:3001`. `/healthz`, `/dashboard`, and its allowlisted
+static assets are public; all business API endpoints
 need `Authorization: Bearer <LAB_OPERATOR_TOKEN>`. This is a local operator
 credential, not customer authentication or the future restricted n8n action
 credential.
@@ -183,8 +189,9 @@ Submit this synthetic ticket with the operator token:
 
 A `201` response returns `ticketId`, `runId` and `eventId`. The outbox worker
 delivers the versioned `ticket.created` event at least once. Workflow A records
-fixture classification and deterministic policy; it does not yet post a support
-response, create a refund or change an account. Retrying intake currently creates
+fixture classification and deterministic policy. Workflow B executes authorized
+support responses or human-approved refunds and verifies the destination state.
+Account repair remains deferred. Retrying intake currently creates
 another ticket; intake request deduplication is not implemented.
 
 The `relaydesk-baseline-v1` fixture contains two fictional customers,

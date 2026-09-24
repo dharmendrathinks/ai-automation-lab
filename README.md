@@ -12,7 +12,9 @@ See the [original no-go](docs/decisions/0001-codex-feasibility.md), the
 [Milestone 6 revalidation](docs/decisions/0002-codex-live-revalidation.md), and
 the [live evaluation evidence](docs/experiments/live-ai-evaluation.md).
 
-Milestone 6 is complete. RelayDesk stores a ticket, automation run, audit entry
+Implementation exists across milestones 0–8, but full acceptance is not yet
+complete; see the [current release gates](docs/IMPLEMENTATION_STATUS.md).
+RelayDesk stores a ticket, automation run, audit entry
 and outbox event in one PostgreSQL transaction. The pinned PostgreSQL 18.6 and
 n8n 2.38.7 services have reproducible local bootstrap, separate databases and
 credentials, and a reviewed connectivity workflow that proves n8n can reach the
@@ -35,6 +37,11 @@ and is not invented.
 ## Development
 
 Use Node 24 LTS (the version in `.node-version`) and pnpm 10.30.1.
+
+For the product UI, open **http://127.0.0.1:3001/dashboard** after starting the
+API and outbox worker. The [workspace guide](docs/guides/WORKSPACE.md) covers
+ticket creation, evidence, human approvals, failure experiments, and outcomes.
+This is separate from the n8n editor and does not require n8n Assistant setup.
 
 ```sh
 pnpm install

@@ -1,6 +1,46 @@
 # Implementation status
 
-Updated: 2026-09-18. Branch: `feat/automation-foundation`. All checkpoints are local.
+Updated: 2026-09-24. Branch: `feat/automation-foundation`. All checkpoints are local.
+
+## Current assessment — not yet full plan completion
+
+The numbered entries below preserve the historical implementation claims and
+experiment evidence. Existing tags do **not** establish that every acceptance
+criterion in `PLAN.md` is satisfied. There are nine numbered milestones (0–8).
+
+The September 23–24 UI pass adds the planned ticket queue/detail, run evidence,
+reviewer approval/history, and reliability scenario screens, plus overview and
+outcome views. See [workspace guide](guides/WORKSPACE.md). It preserves Fastify,
+PostgreSQL, n8n orchestration, fixture defaults, and backend authority; no frontend
+server or analytics infrastructure was added. A forward migration permits the
+existing run-mode field to accurately record live AI and repairs historical mode
+labels only where provider metadata supplies evidence.
+
+Dashboard and CLI report now share a mode-separated ticket denominator that
+includes pending/failed work. Approved resolutions are not counted as fully
+automated. Unobserved human effort is null, never inferred as zero. Reviewer
+decisions are serialized per approval to prevent conflicting simultaneous votes.
+Scenario configuration is now committed atomically with intake/outbox creation,
+so the worker cannot observe a scenario ticket before its fault is persisted.
+Validation: 32 unit/DOM tests, 21 isolated database tests, build, and typecheck;
+the real n8n workspace smoke also passed all five support/lab paths. Details are
+in the workspace guide. This does not close the remaining gates below.
+
+Remaining release gates identified by review:
+
+- Real-browser visual, responsive, keyboard, and accessibility QA. The automated
+  browser/native bridge was unavailable during this pass; DOM tests are not a
+  substitute for screenshot verification.
+- Complete observed human-effort/review measurements and a justified savings
+  calculation; current report correctly declines that claim.
+- Production live-provider hardening to match all frozen harness guarantees,
+  including malformed output, cancellation/process cleanup, and version checks.
+- Broader concurrency/recovery acceptance coverage, including native Wait callback
+  state races and expiry; historical happy-path evidence alone is insufficient.
+- A genuinely expanded held-out live cohort: 100 calls over repeated examples
+  are not 100 independent held-out fixtures.
+
+No historical tag was changed and no new milestone-completion tag is warranted.
 
 ## Milestone 0 — complete
 
@@ -178,7 +218,8 @@ The authenticated backend hides the resume URL and re-checks approval before
 completion. Evidence is recorded in
 [wait/resume experiment](experiments/wait-resume.md).
 
-All eight engineering milestones are complete.
+The historical closeout claimed all milestones complete. The current assessment
+above supersedes that claim; remaining acceptance gates must be closed first.
 
 See [local development](guides/LOCAL_DEVELOPMENT.md) for reproduction commands,
 available endpoints and the current limitations.
