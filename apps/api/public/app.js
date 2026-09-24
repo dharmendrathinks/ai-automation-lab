@@ -593,6 +593,9 @@ document.addEventListener('click', async (event) => {
     return;
   }
   const action = target.dataset.action;
+  // WebKit does not necessarily focus pointer-activated buttons. Establish the
+  // actual dialog trigger so Escape restores focus consistently across engines.
+  if (['connect', 'new-ticket', 'effort', 'review', 'scenario'].includes(action)) target.focus();
   if (action === 'connect') connectDialog();
   if (action === 'close-modal') modal.close();
   if (action === 'refresh') await load();
@@ -615,7 +618,8 @@ document.addEventListener('click', async (event) => {
     }
   }
 });
-document.querySelector('#connect-button').addEventListener('click', () => {
+document.querySelector('#connect-button').addEventListener('click', (event) => {
+  event.currentTarget.focus();
   if (!state.connected) return connectDialog();
   controller?.abort();
   main.removeAttribute('aria-busy');

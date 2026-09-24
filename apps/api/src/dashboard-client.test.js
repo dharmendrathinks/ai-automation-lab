@@ -331,6 +331,7 @@ test('cancelled connection cannot reconnect the workspace after a late response'
   document.querySelector('#operator-token').value = operator;
   submit('#connect-form');
   click('[data-action="close-modal"]');
+  expect(document.activeElement).toBe(document.querySelector('#connect-button'));
   click('#connect-button');
   finish(new Response(JSON.stringify({ ready: true }), { status: 200 }));
   await tick();

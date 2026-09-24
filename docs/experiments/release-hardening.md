@@ -18,6 +18,7 @@ new infrastructure, database migrations or n8n workflow changes were required.
 | Skip navigation | The skip link changed the hash and routed Tickets back to Overview. | Focus main without changing the current route; verify keyboard activation. |
 | Late writes | Closing a submitted form and opening a new draft allowed the first response to close the replacement. | Preserve the new dialog and route; show a refresh/inspection notice. Closing a dialog is not cancellation of a server-side write. |
 | Narrow-screen content | A 64-character unresolved customer reference overflowed the conversation header at 320px. | Allow the flex text column to shrink and wrap while preserving the avatar; exercise queue, conversation and run evidence with maximum-length input. |
+| Pointer-opened dialog focus | WebKit did not focus a clicked opener, so Escape restored focus to the previous page element. | Explicitly focus dialog triggers before opening; keep the same return-focus assertion in every browser. |
 
 The initial database regression run reproduced nine failing cases. A subsequent
 case reproduced the verification-between-retries race. Four DOM regressions
