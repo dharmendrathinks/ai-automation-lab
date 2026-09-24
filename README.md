@@ -32,8 +32,10 @@ The same n8n workflows now use a backend-selected provider without knowing Codex
 details. A historical 100-call evaluation over 20 repeated examples produced 90% exact structured matches and
 100% outcome-equivalent safe routing; a live supported ticket was resolved only
 after destination read-back verification. Provider monetary cost was unavailable
-and is not invented. The new 20-development/80-held-out evaluation has not yet
-been run; the historical result is not its score.
+and is not invented. The September 24 evaluation of 20 development plus 80
+distinct held-out tickets passed its held-out gate: 93.75% category accuracy,
+100% allowed-action accuracy and 100% required-escalation recall. See the
+[separate results and limitations](docs/experiments/live-ai-evaluation.md).
 
 ## Development
 

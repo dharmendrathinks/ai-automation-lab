@@ -18,9 +18,12 @@ loss releases it. This does not promise exactly-once hosted billing after a
 crash between a remote response and local commit. No broker was added. Failed
 attempt usage can be unavailable and reports disclose partial coverage.
 
-These are offline regression results. A fresh held-out live evaluation remains
-pending explicit allowance approval; historical model evidence below is not a
-new run of the hardened adapter. Public CI stays fixture-only.
+After explicit allowance approval, the hardened adapter completed 100 sequential
+live calls on September 24: 20 development and 80 distinct held-out cases. The
+held-out gate passed (93.75% category, 100% allowed-action accuracy, 100% required
+escalation recall, no provider/schema failures). See the separate dated evidence
+in [live AI evaluation](../experiments/live-ai-evaluation.md); the original
+September 18 results below remain historical. Public CI stays fixture-only.
 
 Status: **GO — bounded live runtime approved for explicit local opt-in**
 

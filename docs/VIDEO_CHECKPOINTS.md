@@ -7,6 +7,14 @@ real application and n8n behavior in **FIXTURE MODE**, not live model behavior.
 
 ## Controlled live automation evaluation
 
+September 24 follow-up: the distinct 20-development/80-held-out run completed
+100 live calls with no prompt or label changes. Held-out category accuracy was
+93.75%, allowed-action accuracy and escalation recall 100%; five category misses
+still escalated correctly. The [dated report](experiments/live-ai-evaluation.md)
+preserves per-case evidence and limitations. This extends the evidence, not the
+historical tags below; it does not add a new business-outcome or savings claim.
+No new video start/end tag was created for this follow-up.
+
 ```text
 Experiment/question: Can a live model classify requests while backend policy and verification retain control?
 Status: READY

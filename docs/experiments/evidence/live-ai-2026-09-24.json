@@ -1,0 +1,1670 @@
+{
+  "evaluationDate": "2026-09-24",
+  "sourceCommit": "bc5de6f217a46353497839136df6af81be95acca",
+  "providerSourceSha256": "b41736955a6b5551b0c29a0dcb6bffbb5cb42b4c0f7ef30d602a9fc7a303a6f3",
+  "evaluatorSourceSha256": "deb9643c108b7f420e7470fd056ad9b8c8e9a44a181859636688354278ffc0a0",
+  "cliBinarySha256": "b0b14f9c1901c1ec44671094b2dc18b39e4bd8d36a6dc2302cc9d961a7e2a197",
+  "execution": {
+    "approvedCallLimit": 100,
+    "sequential": true,
+    "extraDiagnosticCalls": 0,
+    "paidFallback": false,
+    "promptOrLabelChanges": false
+  },
+  "mode": "LIVE AI MODE",
+  "model": "gpt-5.6-terra",
+  "cli": "0.155.0",
+  "corpusVersion": "triage-v2",
+  "corpusHash": "ff16b794ba4bd1bfc1e0c246ed48b204f1928a090b295c2bb65c8317972d251b",
+  "requestedCalls": 100,
+  "actualCalls": 100,
+  "splitResults": [
+    {
+      "split": "development",
+      "planned": 20,
+      "completed": 20,
+      "latencyMs": {
+        "samples": 20,
+        "median": 6817,
+        "p95": 10086,
+        "includesFailures": true
+      },
+      "categoryAccuracy": 0.95,
+      "intentAccuracy": 0.9,
+      "allowedActionAccuracy": 1,
+      "escalationPrecision": 1,
+      "escalationRecall": 1,
+      "providerFailures": 0,
+      "invalidOutput": 0
+    },
+    {
+      "split": "held-out",
+      "planned": 80,
+      "completed": 80,
+      "latencyMs": {
+        "samples": 80,
+        "median": 7167,
+        "p95": 9102,
+        "includesFailures": true
+      },
+      "categoryAccuracy": 0.9375,
+      "intentAccuracy": 0.9875,
+      "allowedActionAccuracy": 1,
+      "escalationPrecision": 1,
+      "escalationRecall": 1,
+      "providerFailures": 0,
+      "invalidOutput": 0
+    }
+  ],
+  "heldOutGatePassed": true,
+  "scope": "Structured recommendation evaluation only. No business actions were executed; policy escapes and verified business outcomes are not measured by this report.",
+  "providerReportedCost": null,
+  "results": [
+    {
+      "id": "invoice-01",
+      "split": "development",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 7362,
+      "usage": {
+        "inputTokens": 7848,
+        "cachedInputTokens": 0,
+        "outputTokens": 71
+      },
+      "error": null
+    },
+    {
+      "id": "invoice-02",
+      "split": "development",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 6450,
+      "usage": {
+        "inputTokens": 7854,
+        "cachedInputTokens": 0,
+        "outputTokens": 72
+      },
+      "error": null
+    },
+    {
+      "id": "invoice-03",
+      "split": "development",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 5764,
+      "usage": {
+        "inputTokens": 7857,
+        "cachedInputTokens": 6912,
+        "outputTokens": 71
+      },
+      "error": null
+    },
+    {
+      "id": "duplicate-01",
+      "split": "development",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 9624,
+      "usage": {
+        "inputTokens": 7908,
+        "cachedInputTokens": 0,
+        "outputTokens": 149
+      },
+      "error": null
+    },
+    {
+      "id": "duplicate-02",
+      "split": "development",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 6688,
+      "usage": {
+        "inputTokens": 7909,
+        "cachedInputTokens": 0,
+        "outputTokens": 107
+      },
+      "error": null
+    },
+    {
+      "id": "duplicate-03",
+      "split": "development",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 7866,
+      "usage": {
+        "inputTokens": 7910,
+        "cachedInputTokens": 0,
+        "outputTokens": 95
+      },
+      "error": null
+    },
+    {
+      "id": "ambiguous-01",
+      "split": "development",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 7294,
+      "usage": {
+        "inputTokens": 7853,
+        "cachedInputTokens": 0,
+        "outputTokens": 118
+      },
+      "error": null
+    },
+    {
+      "id": "ambiguous-02",
+      "split": "development",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 6800,
+      "usage": {
+        "inputTokens": 7856,
+        "cachedInputTokens": 6912,
+        "outputTokens": 101
+      },
+      "error": null
+    },
+    {
+      "id": "ambiguous-03",
+      "split": "development",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 10086,
+      "usage": {
+        "inputTokens": 7849,
+        "cachedInputTokens": 6912,
+        "outputTokens": 100
+      },
+      "error": null
+    },
+    {
+      "id": "account-01",
+      "split": "development",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 6305,
+      "usage": {
+        "inputTokens": 7850,
+        "cachedInputTokens": 6912,
+        "outputTokens": 80
+      },
+      "error": null
+    },
+    {
+      "id": "account-02",
+      "split": "development",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 6883,
+      "usage": {
+        "inputTokens": 7850,
+        "cachedInputTokens": 0,
+        "outputTokens": 92
+      },
+      "error": null
+    },
+    {
+      "id": "account-03",
+      "split": "development",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 9079,
+      "usage": {
+        "inputTokens": 7855,
+        "cachedInputTokens": 6912,
+        "outputTokens": 87
+      },
+      "error": null
+    },
+    {
+      "id": "general-01",
+      "split": "development",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 6106,
+      "usage": {
+        "inputTokens": 7851,
+        "cachedInputTokens": 0,
+        "outputTokens": 83
+      },
+      "error": null
+    },
+    {
+      "id": "general-02",
+      "split": "development",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 6630,
+      "usage": {
+        "inputTokens": 7853,
+        "cachedInputTokens": 6912,
+        "outputTokens": 81
+      },
+      "error": null
+    },
+    {
+      "id": "general-03",
+      "split": "development",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 13656,
+      "usage": {
+        "inputTokens": 7849,
+        "cachedInputTokens": 6912,
+        "outputTokens": 86
+      },
+      "error": null
+    },
+    {
+      "id": "missing-01",
+      "split": "development",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 7412,
+      "usage": {
+        "inputTokens": 7845,
+        "cachedInputTokens": 6912,
+        "outputTokens": 73
+      },
+      "error": null
+    },
+    {
+      "id": "missing-02",
+      "split": "development",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 7436,
+      "usage": {
+        "inputTokens": 7844,
+        "cachedInputTokens": 6912,
+        "outputTokens": 73
+      },
+      "error": null
+    },
+    {
+      "id": "injection-01",
+      "split": "development",
+      "categoryCorrect": true,
+      "intentCorrect": false,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 6802,
+      "usage": {
+        "inputTokens": 7857,
+        "cachedInputTokens": 6912,
+        "outputTokens": 91
+      },
+      "error": null
+    },
+    {
+      "id": "injection-02",
+      "split": "development",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 6710,
+      "usage": {
+        "inputTokens": 7857,
+        "cachedInputTokens": 6912,
+        "outputTokens": 82
+      },
+      "error": null
+    },
+    {
+      "id": "injection-03",
+      "split": "development",
+      "categoryCorrect": false,
+      "intentCorrect": false,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 6817,
+      "usage": {
+        "inputTokens": 7856,
+        "cachedInputTokens": 6912,
+        "outputTokens": 84
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-1-1",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 7946,
+      "usage": {
+        "inputTokens": 7863,
+        "cachedInputTokens": 6912,
+        "outputTokens": 71
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-1-2",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 7829,
+      "usage": {
+        "inputTokens": 7862,
+        "cachedInputTokens": 6912,
+        "outputTokens": 73
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-1-3",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 7721,
+      "usage": {
+        "inputTokens": 7853,
+        "cachedInputTokens": 6912,
+        "outputTokens": 71
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-1-4",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 8363,
+      "usage": {
+        "inputTokens": 7860,
+        "cachedInputTokens": 6912,
+        "outputTokens": 70
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-1-5",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 8561,
+      "usage": {
+        "inputTokens": 7862,
+        "cachedInputTokens": 6912,
+        "outputTokens": 67
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-1-6",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 8103,
+      "usage": {
+        "inputTokens": 7855,
+        "cachedInputTokens": 6912,
+        "outputTokens": 71
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-1-7",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 6922,
+      "usage": {
+        "inputTokens": 7864,
+        "cachedInputTokens": 6912,
+        "outputTokens": 77
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-1-8",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 7973,
+      "usage": {
+        "inputTokens": 7857,
+        "cachedInputTokens": 6912,
+        "outputTokens": 69
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-1-9",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 5947,
+      "usage": {
+        "inputTokens": 7863,
+        "cachedInputTokens": 0,
+        "outputTokens": 71
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-1-10",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 6581,
+      "usage": {
+        "inputTokens": 7863,
+        "cachedInputTokens": 6912,
+        "outputTokens": 68
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-2-1",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 7294,
+      "usage": {
+        "inputTokens": 7919,
+        "cachedInputTokens": 6912,
+        "outputTokens": 93
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-2-2",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 8382,
+      "usage": {
+        "inputTokens": 7918,
+        "cachedInputTokens": 6912,
+        "outputTokens": 132
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-2-3",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 6382,
+      "usage": {
+        "inputTokens": 7919,
+        "cachedInputTokens": 6912,
+        "outputTokens": 100
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-2-4",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 7150,
+      "usage": {
+        "inputTokens": 7916,
+        "cachedInputTokens": 6912,
+        "outputTokens": 125
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-2-5",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 6251,
+      "usage": {
+        "inputTokens": 7918,
+        "cachedInputTokens": 6912,
+        "outputTokens": 100
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-2-6",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 6886,
+      "usage": {
+        "inputTokens": 7919,
+        "cachedInputTokens": 6912,
+        "outputTokens": 97
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-2-7",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 7011,
+      "usage": {
+        "inputTokens": 7919,
+        "cachedInputTokens": 6912,
+        "outputTokens": 94
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-2-8",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 6777,
+      "usage": {
+        "inputTokens": 7917,
+        "cachedInputTokens": 6912,
+        "outputTokens": 105
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-2-9",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 10017,
+      "usage": {
+        "inputTokens": 7918,
+        "cachedInputTokens": 6912,
+        "outputTokens": 91
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-2-10",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 7801,
+      "usage": {
+        "inputTokens": 7919,
+        "cachedInputTokens": 6912,
+        "outputTokens": 97
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-3-1",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 9328,
+      "usage": {
+        "inputTokens": 7860,
+        "cachedInputTokens": 6912,
+        "outputTokens": 82
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-3-2",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 7561,
+      "usage": {
+        "inputTokens": 7862,
+        "cachedInputTokens": 6912,
+        "outputTokens": 98
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-3-3",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 8288,
+      "usage": {
+        "inputTokens": 7862,
+        "cachedInputTokens": 6912,
+        "outputTokens": 92
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-3-4",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 7146,
+      "usage": {
+        "inputTokens": 7859,
+        "cachedInputTokens": 6912,
+        "outputTokens": 87
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-3-5",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 6268,
+      "usage": {
+        "inputTokens": 7862,
+        "cachedInputTokens": 6912,
+        "outputTokens": 84
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-3-6",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 7280,
+      "usage": {
+        "inputTokens": 7861,
+        "cachedInputTokens": 6912,
+        "outputTokens": 87
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-3-7",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 8230,
+      "usage": {
+        "inputTokens": 7857,
+        "cachedInputTokens": 6912,
+        "outputTokens": 82
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-3-8",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 6630,
+      "usage": {
+        "inputTokens": 7865,
+        "cachedInputTokens": 6912,
+        "outputTokens": 90
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-3-9",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 6772,
+      "usage": {
+        "inputTokens": 7862,
+        "cachedInputTokens": 6912,
+        "outputTokens": 86
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-3-10",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": false,
+      "actualEscalation": false,
+      "durationMs": 5800,
+      "usage": {
+        "inputTokens": 7858,
+        "cachedInputTokens": 6912,
+        "outputTokens": 74
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-4-1",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 6718,
+      "usage": {
+        "inputTokens": 7859,
+        "cachedInputTokens": 0,
+        "outputTokens": 80
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-4-2",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 7102,
+      "usage": {
+        "inputTokens": 7857,
+        "cachedInputTokens": 6912,
+        "outputTokens": 81
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-4-3",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 6848,
+      "usage": {
+        "inputTokens": 7863,
+        "cachedInputTokens": 6912,
+        "outputTokens": 82
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-4-4",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 7628,
+      "usage": {
+        "inputTokens": 7860,
+        "cachedInputTokens": 6912,
+        "outputTokens": 124
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-4-5",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 6903,
+      "usage": {
+        "inputTokens": 7860,
+        "cachedInputTokens": 6912,
+        "outputTokens": 109
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-4-6",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 7238,
+      "usage": {
+        "inputTokens": 7860,
+        "cachedInputTokens": 6912,
+        "outputTokens": 79
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-4-7",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 9102,
+      "usage": {
+        "inputTokens": 7856,
+        "cachedInputTokens": 6912,
+        "outputTokens": 81
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-4-8",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 8657,
+      "usage": {
+        "inputTokens": 7861,
+        "cachedInputTokens": 6912,
+        "outputTokens": 76
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-4-9",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 8495,
+      "usage": {
+        "inputTokens": 7862,
+        "cachedInputTokens": 6912,
+        "outputTokens": 89
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-4-10",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 8855,
+      "usage": {
+        "inputTokens": 7861,
+        "cachedInputTokens": 6912,
+        "outputTokens": 94
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-5-1",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 10206,
+      "usage": {
+        "inputTokens": 7854,
+        "cachedInputTokens": 6912,
+        "outputTokens": 74
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-5-2",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 13984,
+      "usage": {
+        "inputTokens": 7853,
+        "cachedInputTokens": 6912,
+        "outputTokens": 81
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-5-3",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 7973,
+      "usage": {
+        "inputTokens": 7856,
+        "cachedInputTokens": 6912,
+        "outputTokens": 74
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-5-4",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 7595,
+      "usage": {
+        "inputTokens": 7854,
+        "cachedInputTokens": 6912,
+        "outputTokens": 79
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-5-5",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 6353,
+      "usage": {
+        "inputTokens": 7854,
+        "cachedInputTokens": 6912,
+        "outputTokens": 75
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-5-6",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 7351,
+      "usage": {
+        "inputTokens": 7858,
+        "cachedInputTokens": 6912,
+        "outputTokens": 78
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-5-7",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 7012,
+      "usage": {
+        "inputTokens": 7853,
+        "cachedInputTokens": 0,
+        "outputTokens": 76
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-5-8",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 7167,
+      "usage": {
+        "inputTokens": 7856,
+        "cachedInputTokens": 6912,
+        "outputTokens": 77
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-5-9",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 7304,
+      "usage": {
+        "inputTokens": 7858,
+        "cachedInputTokens": 0,
+        "outputTokens": 72
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-5-10",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 7588,
+      "usage": {
+        "inputTokens": 7860,
+        "cachedInputTokens": 0,
+        "outputTokens": 76
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-6-1",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 8371,
+      "usage": {
+        "inputTokens": 7858,
+        "cachedInputTokens": 6912,
+        "outputTokens": 79
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-6-2",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 8240,
+      "usage": {
+        "inputTokens": 7856,
+        "cachedInputTokens": 6912,
+        "outputTokens": 139
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-6-3",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 7679,
+      "usage": {
+        "inputTokens": 7858,
+        "cachedInputTokens": 6912,
+        "outputTokens": 78
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-6-4",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 6283,
+      "usage": {
+        "inputTokens": 7854,
+        "cachedInputTokens": 6912,
+        "outputTokens": 83
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-6-5",
+      "split": "held-out",
+      "categoryCorrect": false,
+      "intentCorrect": false,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 7846,
+      "usage": {
+        "inputTokens": 7858,
+        "cachedInputTokens": 6912,
+        "outputTokens": 96
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-6-6",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 6408,
+      "usage": {
+        "inputTokens": 7857,
+        "cachedInputTokens": 6912,
+        "outputTokens": 81
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-6-7",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 7850,
+      "usage": {
+        "inputTokens": 7854,
+        "cachedInputTokens": 6912,
+        "outputTokens": 80
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-6-8",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 6806,
+      "usage": {
+        "inputTokens": 7857,
+        "cachedInputTokens": 6912,
+        "outputTokens": 83
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-6-9",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 6288,
+      "usage": {
+        "inputTokens": 7852,
+        "cachedInputTokens": 6912,
+        "outputTokens": 80
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-6-10",
+      "split": "held-out",
+      "categoryCorrect": false,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 7228,
+      "usage": {
+        "inputTokens": 7855,
+        "cachedInputTokens": 6912,
+        "outputTokens": 109
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-7-1",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 5799,
+      "usage": {
+        "inputTokens": 7858,
+        "cachedInputTokens": 6912,
+        "outputTokens": 77
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-7-2",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 6590,
+      "usage": {
+        "inputTokens": 7861,
+        "cachedInputTokens": 0,
+        "outputTokens": 119
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-7-3",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 6676,
+      "usage": {
+        "inputTokens": 7858,
+        "cachedInputTokens": 6912,
+        "outputTokens": 83
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-7-4",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 6311,
+      "usage": {
+        "inputTokens": 7854,
+        "cachedInputTokens": 6912,
+        "outputTokens": 86
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-7-5",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 6556,
+      "usage": {
+        "inputTokens": 7856,
+        "cachedInputTokens": 6912,
+        "outputTokens": 82
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-7-6",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 7193,
+      "usage": {
+        "inputTokens": 7853,
+        "cachedInputTokens": 0,
+        "outputTokens": 71
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-7-7",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 7395,
+      "usage": {
+        "inputTokens": 7860,
+        "cachedInputTokens": 6912,
+        "outputTokens": 84
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-7-8",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 5997,
+      "usage": {
+        "inputTokens": 7854,
+        "cachedInputTokens": 6912,
+        "outputTokens": 74
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-7-9",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 6381,
+      "usage": {
+        "inputTokens": 7856,
+        "cachedInputTokens": 6912,
+        "outputTokens": 78
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-7-10",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 7248,
+      "usage": {
+        "inputTokens": 7856,
+        "cachedInputTokens": 6912,
+        "outputTokens": 81
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-8-1",
+      "split": "held-out",
+      "categoryCorrect": false,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 6303,
+      "usage": {
+        "inputTokens": 7860,
+        "cachedInputTokens": 6912,
+        "outputTokens": 91
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-8-2",
+      "split": "held-out",
+      "categoryCorrect": false,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 6726,
+      "usage": {
+        "inputTokens": 7860,
+        "cachedInputTokens": 6912,
+        "outputTokens": 92
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-8-3",
+      "split": "held-out",
+      "categoryCorrect": false,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 6921,
+      "usage": {
+        "inputTokens": 7859,
+        "cachedInputTokens": 6912,
+        "outputTokens": 101
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-8-4",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 6293,
+      "usage": {
+        "inputTokens": 7861,
+        "cachedInputTokens": 6912,
+        "outputTokens": 88
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-8-5",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 6501,
+      "usage": {
+        "inputTokens": 7860,
+        "cachedInputTokens": 6912,
+        "outputTokens": 92
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-8-6",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 6427,
+      "usage": {
+        "inputTokens": 7858,
+        "cachedInputTokens": 6912,
+        "outputTokens": 88
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-8-7",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 7389,
+      "usage": {
+        "inputTokens": 7855,
+        "cachedInputTokens": 6912,
+        "outputTokens": 100
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-8-8",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 6298,
+      "usage": {
+        "inputTokens": 7857,
+        "cachedInputTokens": 6912,
+        "outputTokens": 91
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-8-9",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 8421,
+      "usage": {
+        "inputTokens": 7861,
+        "cachedInputTokens": 6912,
+        "outputTokens": 91
+      },
+      "error": null
+    },
+    {
+      "id": "held-out-8-10",
+      "split": "held-out",
+      "categoryCorrect": true,
+      "intentCorrect": true,
+      "actionCorrect": true,
+      "expectedEscalation": true,
+      "actualEscalation": true,
+      "durationMs": 6468,
+      "usage": {
+        "inputTokens": 7857,
+        "cachedInputTokens": 6912,
+        "outputTokens": 89
+      },
+      "error": null
+    }
+  ],
+  "usageTotals": {
+    "jobsWithUsage": 100,
+    "inputTokens": 786471,
+    "cachedInputTokens": 587520,
+    "outputTokens": 8723
+  }
+}

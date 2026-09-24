@@ -62,9 +62,12 @@ execution has not been claimed. All commits remain local and tags are unchanged.
 
 Remaining evidence/signoff gates:
 
-- Run the new held-out **live** cohort after explicit allowance approval. No new
-  hosted inference was made during this remediation. Offline provider tests do
-  not prove present live availability or held-out model quality.
+- **Closed September 24: held-out live recommendation gate.** After explicit
+  approval, exactly 100 sequential calls completed (20 development + 80 held-out)
+  on the pinned CLI/model. Held-out category accuracy was 93.75%, allowed-action
+  accuracy 100%, required-escalation recall 100%; no provider/schema failures.
+  See [scores, misses and sanitized evidence](experiments/live-ai-evaluation.md).
+  This was not a business-outcome or human-productivity experiment.
 - Gather actual matched manual/automation-assisted human-time observations.
   Capability and synthetic arithmetic are tested; real productivity is unproven.
 - Complete human visual/screen-reader signoff. Screenshots have been inspected
