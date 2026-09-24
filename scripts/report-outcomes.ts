@@ -20,16 +20,9 @@ try {
   const cutoff = new Date();
   const cohorts = await Promise.all(
     (['FIXTURE MODE', 'LIVE AI MODE'] as const).map(async (mode) => ({
-      ...(await outcomeMetrics(db, mode, cutoff)),
-      humanEffort: {
-        observedDirectHumanMinutesPerTicket: null,
-        coverage:
-          'Not measured. Absence of approval is not evidence of zero human effort.',
-        syntheticManualBaselineMinutes: syntheticBaseline,
-        estimatedMinutesSavedPerSuccessfullyResolvedTicket: null,
-      },
+      ...(await outcomeMetrics(db, mode, cutoff, syntheticBaseline)),
       conclusion:
-        'Verified outcomes and recorded automation are measurable; removed human work is not yet established without observed human-effort evidence.',
+        'Consult observation coverage and matched-baseline sample counts. Synthetic estimates demonstrate arithmetic, not observed productivity; incomplete coverage cannot establish cohort-wide savings.',
     })),
   );
   const usage = await pool.query(

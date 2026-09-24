@@ -237,7 +237,7 @@ function ticketPage() {
       `TICKET RD-${shortId(t.id)}`,
       'The request. The response. The evidence.',
       'Only a verified destination action can count as a resolved outcome.',
-      badge(t.status),
+      badge(t.status) + button('Record effort', 'effort'),
     ) +
     `<div class="two-columns"><section class="panel"><div class="section-heading"><h2>Conversation</h2><span class="eyebrow">SYNTHETIC CUSTOMER</span></div><article class="message"><div class="message-header"><span class="avatar" aria-hidden="true">${e((t.customer?.name ?? 'Unknown').slice(0, 1))}</span><div><strong>${e(t.customer?.name ?? t.customerRef)}</strong><small>${e(date(t.createdAt))} · Incoming request</small></div></div><div class="message-body">${e(t.message)}</div></article>${t.messages.map((m) => `<article class="message automation"><div class="message-header"><span class="avatar" aria-hidden="true">RD</span><div><strong>RelayDesk automation</strong><small>${e(date(m.createdAt))} · ${e(m.visibility)} destination message</small></div></div><div class="message-body">${e(m.text)}</div></article>`).join('')}${!t.messages.length ? '<div class="notice"><p>No destination response is recorded yet. This is not a completed resolution.</p></div>' : ''}</section><div class="stack"><section class="panel"><h2>Customer context</h2><dl class="key-values"><dt>Customer</dt><dd>${e(t.customer?.name ?? 'Unresolved')}</dd><dt>Reference</dt><dd class="mono">${e(t.customerRef)}</dd><dt>Account plan</dt><dd>${e(t.customer?.accountPlan ?? 'Not available')}</dd><dt>Status</dt><dd>${badge(t.status)}</dd></dl></section><section class="panel"><h2>Automation evidence</h2><p class="muted small-text">Triage completion is separate from the business outcome.</p>${t.runs.map((r) => `<div class="action-strip"><div><strong>Run ${e(shortId(r.id))}</strong><small>Triage: ${e(humanize(r.phase))}</small></div><a class="button secondary small" href="${routeLink('run', r.id)}">Inspect run ↗</a></div>`).join('') || '<p class="muted small-text">No automation run recorded.</p>'}</section></div></div>`
   );
@@ -405,6 +405,8 @@ function definition(label, value, note) {
 function outcomesPage() {
   const m = state.metrics,
     rel = m.reliability;
+  const minutesLabel = (value) =>
+    value == null ? 'N/A' : `${Number(value).toFixed(2)} min`;
   return (
     heading(
       'AUTOMATION ECONOMICS',
@@ -414,7 +416,7 @@ function outcomesPage() {
     ) +
     `<div class="toolbar"><div><h2>One cohort. Explicit denominators.</h2><span class="muted small-text">As of ${e(date(m.cohort.cutoff))} · no fixture/live mixing</span></div>${cohortControl()}</div>` +
     summaryMetrics() +
-    `<div class="notice warning"><span class="notice-icon" aria-hidden="true">◇</span><p><strong>Verified automation is measurable. Human work removed is not yet established.</strong> Active human effort and monetary cost are not captured. N/A means missing evidence—not zero effort, free inference, or savings.</p></div><div class="equal-columns"><section class="panel"><h2>Time & human effort</h2>${definition('End-to-end handling', duration(m.meanHandlingMs), 'Mean intake-to-last-verified-action time for fully resolved tickets only.')}${definition('Approval turnaround', duration(m.meanApprovalElapsedMs), 'Request to approved/rejected decision. Includes queue time; not active review time.')}${definition('Active human review', 'N/A', 'Requires observed effort data, not time with a page open.')}${definition('Human minutes per ticket', 'N/A', 'No complete measurement of review, follow-up, or recovery work yet.')}${definition('Estimated human minutes saved', 'N/A', 'Requires a labeled manual baseline and measured human effort.')}</section><section class="panel"><h2>Reliability & recovery</h2>${definition('Failure rate', percent(rel.failureRate), `${rel.failedActions} currently failed actions / ${rel.attemptedActions} actions with an execution attempt.`)}${definition('Retry rate', percent(rel.retryRate), `${rel.retriedActions} actions with multiple attempts / ${rel.attemptedActions} attempted actions.`)}${definition('Recovered actions', rel.recoveredActions, 'Currently verified after a recorded execution failure, lost response, or unknown verification.')}${definition('Unknown outcomes', rel.currentUnknown, `${rel.everUnknown} runs have ever recorded unknown verification. Pending is a separate state.`)}${definition('Duplicate-prevention events', rel.duplicatePreventionEvents, 'Observed suppressed event deliveries plus idempotent action replays.')}</section><section class="panel"><h2>Provider economics</h2>${definition('Provider latency', duration(m.meanProviderLatencyMs), 'Mean recorded provider duration, including failed jobs. Fixture duration is not model latency.')}${definition('Model / runtime cost', 'N/A', 'No reliable monetary cost is recorded. Tokens alone are not a price.')}${definition('Cost per verified resolution', 'N/A', 'Requires complete, attributable cost data and a meaningful resolution denominator.')}</section><section class="panel feature-panel"><span class="eyebrow">READING THIS REPORT</span><h2>Count outcomes, not activity.</h2><p>${e(m.cohort.definition)}</p><p>Verified completion requires a resolved ticket with at least one action and every action verified. Fully automated additionally excludes tickets with human approval records. Escalation counts tickets currently routed to human follow-up.</p><p>These are current-state measurements, not a historical snapshot or proof of customer satisfaction. There are no dollar-savings estimates.</p><a class="text-link" href="#lab">Challenge the result in the lab ↗</a></section></div>`
+    `<div class="notice warning"><span class="notice-icon" aria-hidden="true">◇</span><p><strong>Verify outcomes. Measure human work separately.</strong> Effort requires explicit observations. Monetary cost remains unavailable. N/A means missing evidence—not zero effort, free inference, or savings.</p></div><div class="equal-columns"><section class="panel"><h2>Time & human effort</h2>${definition('End-to-end handling', duration(m.meanHandlingMs), 'Mean intake-to-last-verified-action time for fully resolved tickets only.')}${definition('Approval turnaround', duration(m.meanApprovalElapsedMs), 'Request to approved/rejected decision. Includes queue time; not active review time.')}${definition('Active human review', minutesLabel(m.activeReviewMinutes), 'Recorded operator-reported review subtotal; may have incomplete coverage. Not page-open time.')}${definition('Human minutes per ticket', minutesLabel(m.humanMinutesPerTicket), `${m.humanEffort?.observed?.completeTickets ?? 0}/${m.cohort.tickets} tickets have complete operator-reported coverage. Incomplete coverage stays N/A.`)}${definition('Estimated human minutes saved', minutesLabel(m.estimatedHumanMinutesSaved), `Measured matched baseline; ${m.humanEffort?.observed?.savings?.measured?.matchedResolvedTickets ?? 0} verified tickets. Negative values mean more work.`)}${definition('Synthetic-baseline savings estimate', minutesLabel(m.humanEffort?.observed?.savings?.synthetic?.minutesPerMatchedResolvedTicket), 'Operator-reported effort against an explicitly synthetic manual baseline. Not measured savings.')}${definition('Synthetic effort examples', m.humanEffort?.synthetic?.observedTickets ?? 0, 'Automated/test observations are excluded from measured labor and savings.')}</section><section class="panel"><h2>Reliability & recovery</h2>${definition('Failure rate', percent(rel.failureRate), `${rel.failedActions} currently failed actions / ${rel.attemptedActions} actions with an execution attempt.`)}${definition('Retry rate', percent(rel.retryRate), `${rel.retriedActions} actions with multiple attempts / ${rel.attemptedActions} attempted actions.`)}${definition('Recovered actions', rel.recoveredActions, 'Currently verified after a recorded execution failure, lost response, or unknown verification.')}${definition('Unknown outcomes', rel.currentUnknown, `${rel.everUnknown} runs have ever recorded unknown verification. Pending is a separate state.`)}${definition('Duplicate-prevention events', rel.duplicatePreventionEvents, 'Observed suppressed event deliveries plus idempotent action replays.')}</section><section class="panel"><h2>Provider economics</h2>${definition('Provider latency', duration(m.meanProviderLatencyMs), 'Mean recorded provider duration, including failed jobs. Fixture duration is not model latency.')}${definition('Model / runtime cost', 'N/A', 'No reliable monetary cost is recorded. Tokens alone are not a price.')}${definition('Cost per verified resolution', 'N/A', 'Requires complete, attributable cost data and a meaningful resolution denominator.')}</section><section class="panel feature-panel"><span class="eyebrow">READING THIS REPORT</span><h2>Count outcomes, not activity.</h2><p>${e(m.cohort.definition)}</p><p>Verified completion requires a resolved ticket with at least one action and every action verified. Fully automated additionally excludes tickets with human approval records. Escalation counts tickets currently routed to human follow-up.</p><p>These are current-state measurements, not a historical snapshot or proof of customer satisfaction. There are no dollar-savings estimates.</p><a class="text-link" href="#lab">Challenge the result in the lab ↗</a></section></div>`
   );
 }
 const pages = {
@@ -549,6 +551,23 @@ function reviewDialog(id) {
     `<p class="modal-intro">A decision applies only to this frozen synthetic refund. Approval schedules an action; it does not certify success.</p><div class="proposal"><span class="eyebrow">PROPOSED REFUND</span><div class="amount">${e(money(a.action.parameters.amountMinor, a.action.parameters.currency))}</div><dl class="key-values compact"><dt>Customer</dt><dd>${e(a.action.parameters.customerId)}</dd><dt>Payment</dt><dd>${e(a.action.parameters.paymentId)}</dd><dt>Invoice</dt><dd>${e(a.action.parameters.invoiceId)}</dd><dt>Policy</dt><dd>${e(a.action.policyVersion)}</dd><dt>Expires</dt><dd>${e(date(a.expiresAt))}</dd></dl>${evidence('Bound proposal hash', a.proposalHash)}</div><form id="review-form" data-id="${e(a.id)}"><div class="field"><label for="review-decision">Your decision</label><select id="review-decision" name="decision" required><option value="">Choose a decision…</option><option value="approved">Approve this exact refund</option><option value="rejected">Reject this proposal</option></select></div><div class="field"><label for="review-reason">Reason for your decision</label><textarea id="review-reason" name="reason" minlength="1" maxlength="500" required placeholder="Record the evidence you reviewed and why this decision is appropriate."></textarea></div><label class="check-label"><input type="checkbox" required><span>I reviewed the customer, payment, amount, and policy evidence. This decision will be recorded in the audit trail.</span></label><p class="field-error" id="form-error" role="alert"></p><div class="form-actions"><button type="button" class="button secondary" data-action="close-modal">Cancel</button><button type="submit" class="button primary">Record decision</button></div></form>`,
   );
 }
+function effortDialog() {
+  showModal(
+    'Record active effort',
+    'CUMULATIVE OBSERVATION · NOT WAIT TIME',
+    `<p class="modal-intro">Record total active handling, review, follow-up and recovery for this ticket so far. A later snapshot replaces the previous total. Do not count queue time or an unattended open page. Automated test activity is synthetic, never human labor.</p>
+    <form id="effort-form" data-ticket="${e(state.id)}" data-observation="${crypto.randomUUID()}">
+    <div class="field"><label for="effort-source">Observation source</label><select id="effort-source" name="source"><option value="synthetic">Synthetic teaching example</option><option value="operator_reported">Operator-reported measurement</option></select></div>
+    <div class="field"><label for="effort-total">Total active minutes</label><input id="effort-total" name="total" type="number" min="0" max="1440" step="0.01" required></div>
+    <div class="field"><label for="effort-review">Review minutes included in total</label><input id="effort-review" name="review" type="number" min="0" max="1440" step="0.01" required></div>
+    <div class="field"><label for="effort-note">Measurement method and scope</label><textarea id="effort-note" name="note" maxlength="300" required></textarea></div>
+    <label class="check-label"><input type="checkbox" name="complete"><span>This snapshot covers all active work on the ticket so far. New work invalidates complete coverage.</span></label>
+    <div class="field"><label for="effort-baseline-kind">Matched manual-only baseline</label><select id="effort-baseline-kind" name="baselineKind"><option value="none">Not available</option><option value="synthetic">Synthetic/configurable estimate</option><option value="measured">Measured on the same task and outcome</option></select></div>
+    <div class="field"><label for="effort-baseline">Baseline minutes (when available)</label><input id="effort-baseline" name="baseline" type="number" min="0" max="1440" step="0.01"></div>
+    <div class="field"><label for="effort-reference">Baseline method/version (when available)</label><input id="effort-reference" name="reference" maxlength="120"></div>
+    <p class="field-error" id="form-error" role="alert"></p><div class="form-actions"><button type="button" class="button secondary" data-action="close-modal">Cancel</button><button class="button primary" type="submit">Save observation</button></div></form>`,
+  );
+}
 function scenarioDialog(id) {
   const s = scenarios.find((item) => item.id === id);
   if (!s) return;
@@ -577,6 +596,7 @@ document.addEventListener('click', async (event) => {
   if (action === 'close-modal') modal.close();
   if (action === 'refresh') await load();
   if (action === 'new-ticket') newTicketDialog();
+  if (action === 'effort') effortDialog();
   if (action === 'review') reviewDialog(target.dataset.id);
   if (action === 'scenario') scenarioDialog(target.dataset.id);
   if (action === 'reconcile') {
@@ -657,6 +677,41 @@ modal.addEventListener('submit', async (event) => {
       toast(
         'Ticket created. Waiting for the outbox worker and n8n to process it.',
       );
+    } else if (form.id === 'effort-form') {
+      const baselineKind = data.get('baselineKind');
+      if (
+        baselineKind !== 'none' &&
+        (!String(data.get('baseline')).trim() ||
+          !String(data.get('reference')).trim())
+      )
+        throw new Error(
+          'Provide baseline minutes and its method/version, or choose Not available.',
+        );
+      await api(
+        `/api/v1/tickets/${encodeURIComponent(form.dataset.ticket)}/effort`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            observationId: form.dataset.observation,
+            source: data.get('source'),
+            totalMinutes: Number(data.get('total')),
+            reviewMinutes: Number(data.get('review')),
+            complete: data.get('complete') === 'on',
+            note: String(data.get('note')).trim(),
+            baseline:
+              baselineKind === 'none'
+                ? null
+                : {
+                    kind: baselineKind,
+                    minutes: Number(data.get('baseline')),
+                    reference: String(data.get('reference')).trim(),
+                  },
+          }),
+        },
+      );
+      modal.close();
+      await load();
+      toast('Effort observation saved with its measurement source.');
     } else if (form.id === 'review-form') {
       await api(
         `/api/v1/approvals/${encodeURIComponent(form.dataset.id)}/decision`,

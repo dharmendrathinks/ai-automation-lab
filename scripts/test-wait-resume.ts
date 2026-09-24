@@ -74,7 +74,7 @@ try {
   const expired = await create(1);
   clock = new Date(clock.getTime() + 2_000);
   const lateApproval = await app.inject({ method: 'POST', url: `/api/v1/wait-exercises/${expired}/approve`, headers: operatorHeaders });
-  if (lateApproval.statusCode !== 500 || (await state(expired)).status !== 'expired') throw new Error('expired approval was not rejected');
+  if (lateApproval.statusCode !== 409 || (await state(expired)).status !== 'expired') throw new Error('expired approval was not rejected');
 
   console.log('Native n8n wait persisted across restart; early approval, callback race, lost-response retry, duplicate callback and expiry behaved safely.');
 } finally {

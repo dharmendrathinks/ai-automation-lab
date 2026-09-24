@@ -1,80 +1,177 @@
 import { randomUUID } from 'node:crypto';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import type { Database } from './db/index.js';
 import { waitExercises } from './db/schema.js';
 
-export async function createWaitExercise(db: Database, now: Date, expiresInSeconds = 300) {
-  const exercise = { id: randomUUID(), status: 'pending', expiresAt: new Date(now.getTime() + expiresInSeconds * 1000), createdAt: now };
+export async function createWaitExercise(
+  db: Database,
+  now: Date,
+  expiresInSeconds = 300,
+) {
+  const exercise = {
+    id: randomUUID(),
+    status: 'pending',
+    expiresAt: new Date(now.getTime() + expiresInSeconds * 1000),
+    createdAt: now,
+  };
   await db.insert(waitExercises).values(exercise);
   return exercise;
 }
 
-export async function approveWaitExercise(db: Database, id: string, now: Date) {
-  const [current] = await db.select().from(waitExercises).where(eq(waitExercises.id, id));
-  if (!current) return null;
-  if (current.status === 'expired' || (current.expiresAt <= now && current.status !== 'completed')) {
-    await db.update(waitExercises).set({ status: 'expired' }).where(eq(waitExercises.id, id));
-    throw new Error('wait_expired');
-  }
-  return db.transaction(async (tx) => {
-    const [exercise] = await tx.select().from(waitExercises).where(eq(waitExercises.id, id));
-    if (!exercise) return null;
-    if (['approved', 'callback_sent', 'completed'].includes(exercise.status)) return { ...exercise, replayed: true };
-    await tx.update(waitExercises).set({ status: 'approved', approvedAt: now }).where(eq(waitExercises.id, id));
-    return { ...exercise, status: 'approved', approvedAt: now, replayed: false };
+// Commit expiry before reporting conflict: throwing in a transaction rolls it back.
+async function transition<T>(
+  db: Database,
+  id: string,
+  now: Date,
+  change: (
+    tx: Parameters<Parameters<Database['transaction']>[0]>[0],
+    row: typeof waitExercises.$inferSelect,
+  ) => Promise<T>,
+) {
+  const result = await db.transaction(async (tx) => {
+    await tx.execute(
+      sql`SELECT id FROM wait_exercises WHERE id=${id} FOR UPDATE`,
+    );
+    const [row] = await tx
+      .select()
+      .from(waitExercises)
+      .where(eq(waitExercises.id, id));
+    if (!row) return null;
+    if (
+      row.status !== 'completed' &&
+      (row.status === 'expired' || row.expiresAt <= now)
+    ) {
+      await tx
+        .update(waitExercises)
+        .set({ status: 'expired' })
+        .where(eq(waitExercises.id, id));
+      return { expired: true } as const;
+    }
+    return { value: await change(tx, row) };
+  });
+  if (result && 'expired' in result) throw new Error('wait_expired');
+  return result?.value ?? null;
+}
+
+export function approveWaitExercise(db: Database, id: string, now: Date) {
+  return transition(db, id, now, async (tx, row) => {
+    if (row.status !== 'pending')
+      return { exerciseId: id, status: row.status, replayed: true };
+    await tx
+      .update(waitExercises)
+      .set({ status: 'approved', approvedAt: now })
+      .where(eq(waitExercises.id, id));
+    return {
+      exerciseId: id,
+      status: 'approved',
+      approvedAt: now,
+      replayed: false,
+    };
   });
 }
 
-export async function registerWait(db: Database, id: string, resumeUrl: string, now: Date) {
+export async function registerWait(
+  db: Database,
+  id: string,
+  resumeUrl: string,
+  now: Date,
+  configuredOrigin?: string,
+) {
   const parsed = new URL(resumeUrl);
-  if (!['localhost', '127.0.0.1'].includes(parsed.hostname) || parsed.port !== '5678' || !parsed.pathname.startsWith('/webhook-waiting/')) throw new Error('invalid_resume_url');
-  return db.transaction(async (tx) => {
-    const [exercise] = await tx.select().from(waitExercises).where(eq(waitExercises.id, id));
-    if (!exercise) return null;
-    if (exercise.expiresAt <= now && exercise.status === 'pending') {
-      await tx.update(waitExercises).set({ status: 'expired' }).where(eq(waitExercises.id, id));
-      throw new Error('wait_expired');
-    }
-    if (exercise.resumeUrl && exercise.resumeUrl !== resumeUrl) throw new Error('resume_url_conflict');
-    await tx.update(waitExercises).set({ resumeUrl }).where(eq(waitExercises.id, id));
-    return { exerciseId: id, status: exercise.status, approvalRecorded: ['approved', 'callback_sent', 'completed'].includes(exercise.status) };
+  // Pinned n8n signs resume URLs. Permit only its single opaque signature,
+  // never arbitrary query parameters or credentials.
+  const validQuery =
+    !parsed.search || /^\?signature=[a-f0-9]{64}$/.test(parsed.search);
+  const allowedOrigin = configuredOrigin
+    ? parsed.origin === configuredOrigin
+    : ['localhost', '127.0.0.1'].includes(parsed.hostname) &&
+      parsed.port === '5678';
+  if (
+    parsed.protocol !== 'http:' ||
+    parsed.username ||
+    parsed.password ||
+    !validQuery ||
+    parsed.hash ||
+    !allowedOrigin ||
+    !/^\/webhook-waiting\/[A-Za-z0-9/_-]+$/.test(parsed.pathname)
+  )
+    throw new Error('invalid_resume_url');
+  return transition(db, id, now, async (tx, row) => {
+    if (row.resumeUrl && row.resumeUrl !== resumeUrl)
+      throw new Error('resume_url_conflict');
+    if (!row.resumeUrl)
+      await tx
+        .update(waitExercises)
+        .set({ resumeUrl })
+        .where(eq(waitExercises.id, id));
+    return {
+      exerciseId: id,
+      status: row.status,
+      approvalRecorded: ['approved', 'callback_sent', 'completed'].includes(
+        row.status,
+      ),
+    };
   });
 }
 
 export async function resumeWait(db: Database, id: string, now: Date) {
-  const claimed = await db.transaction(async (tx) => {
-    const rows = await tx.execute(sql`SELECT * FROM wait_exercises WHERE id=${id} FOR UPDATE`);
-    const exercise = rows.rows[0] as { status: string; resume_url: string | null; expires_at: Date; callback_attempts: number } | undefined;
-    if (!exercise) return null;
-    if (exercise.status === 'completed') return { completed: true, replayed: true } as const;
-    if (exercise.expires_at <= now) {
-      await tx.update(waitExercises).set({ status: 'expired' }).where(eq(waitExercises.id, id));
-      throw new Error('wait_expired');
-    }
-    if (!['approved', 'callback_sent'].includes(exercise.status)) throw new Error('approval_required');
-    if (!exercise.resume_url) throw new Error('wait_not_ready');
-    await tx.update(waitExercises).set({ callbackAttempts: exercise.callback_attempts + 1 }).where(eq(waitExercises.id, id));
-    return { completed: false, resumeUrl: exercise.resume_url, attempt: exercise.callback_attempts + 1 } as const;
+  const claimed = await transition(db, id, now, async (tx, row) => {
+    if (row.status === 'completed')
+      return { completed: true, replayed: true } as const;
+    if (!['approved', 'callback_sent'].includes(row.status))
+      throw new Error('approval_required');
+    if (!row.resumeUrl) throw new Error('wait_not_ready');
+    if (row.callbackAttempts >= 5) throw new Error('resume_retry_exhausted');
+    await tx
+      .update(waitExercises)
+      .set({ callbackAttempts: row.callbackAttempts + 1 })
+      .where(eq(waitExercises.id, id));
+    return {
+      completed: false,
+      resumeUrl: row.resumeUrl,
+      attempt: row.callbackAttempts + 1,
+    } as const;
   });
   if (!claimed || claimed.completed) return claimed;
-  const response = await fetch(claimed.resumeUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ exerciseId: id }) });
-  if (!response.ok) {
-    const [latest] = await db.select().from(waitExercises).where(eq(waitExercises.id, id));
-    if (latest?.status === 'completed') return { completed: true, replayed: true };
-    throw new Error('resume_callback_failed');
+  let accepted = false;
+  try {
+    const response = await fetch(claimed.resumeUrl, {
+      method: 'POST',
+      redirect: 'error',
+      signal: AbortSignal.timeout(10_000),
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ exerciseId: id }),
+    });
+    accepted = response.ok;
+    await response.body?.cancel();
+  } catch {
+    /* A lost response does not prove the destination failed. */
   }
-  await db.update(waitExercises).set({ status: 'callback_sent' }).where(eq(waitExercises.id, id));
+  const [latest] = await db
+    .select()
+    .from(waitExercises)
+    .where(eq(waitExercises.id, id));
+  if (latest?.status === 'completed')
+    return { completed: true, replayed: true };
+  if (!accepted) throw new Error('resume_callback_failed');
+  // Completion/expiry can race the HTTP response. Never regress terminal state.
+  await db
+    .update(waitExercises)
+    .set({ status: 'callback_sent' })
+    .where(and(eq(waitExercises.id, id), eq(waitExercises.status, 'approved')));
   return { completed: false, callbackAccepted: true, attempt: claimed.attempt };
 }
 
-export async function completeWait(db: Database, id: string, now: Date) {
-  return db.transaction(async (tx) => {
-    const [exercise] = await tx.select().from(waitExercises).where(eq(waitExercises.id, id));
-    if (!exercise) return null;
-    if (exercise.status === 'completed') return { exerciseId: id, status: 'completed', replayed: true };
-    if (!exercise.approvedAt || !['approved', 'callback_sent'].includes(exercise.status)) throw new Error('approval_required');
-    if (exercise.expiresAt <= exercise.approvedAt) throw new Error('wait_expired');
-    await tx.update(waitExercises).set({ status: 'completed', completedAt: now }).where(eq(waitExercises.id, id));
+export function completeWait(db: Database, id: string, now: Date) {
+  return transition(db, id, now, async (tx, row) => {
+    if (row.status === 'completed')
+      return { exerciseId: id, status: 'completed', replayed: true };
+    if (!row.approvedAt || !['approved', 'callback_sent'].includes(row.status))
+      throw new Error('approval_required');
+    await tx
+      .update(waitExercises)
+      .set({ status: 'completed', completedAt: now })
+      .where(eq(waitExercises.id, id));
     return { exerciseId: id, status: 'completed', replayed: false };
   });
 }

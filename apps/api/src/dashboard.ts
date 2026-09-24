@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import type { FastifyInstance } from 'fastify';
 import { asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { Database } from './db/index.js';
+import { effortMetrics } from './effort.js';
 import {
   actionAttempts,
   aiJobs,
@@ -165,6 +166,7 @@ export async function outcomeMetrics(
   db: Database,
   mode: 'FIXTURE MODE' | 'LIVE AI MODE',
   cutoff: Date,
+  syntheticBaseline: number | null = null,
 ) {
   // One row per ticket: actions cannot inflate the denominator. Include pending and failed jobs.
   // Provider metadata takes precedence over legacy intake rows that were incorrectly fixture-labeled.
@@ -182,18 +184,25 @@ export async function outcomeMetrics(
   ) SELECT
     (SELECT count(*)::int FROM selected) AS tickets,
     (SELECT count(*)::int FROM verified_tickets) AS resolved,
-    (SELECT count(*)::int FROM verified_tickets c WHERE NOT EXISTS (SELECT 1 FROM approvals p JOIN action_cohort a ON a.id=p.action_id WHERE a.run_id=c.run_id)) AS automated,
+    (SELECT count(*)::int FROM verified_tickets c WHERE NOT EXISTS (SELECT 1 FROM approvals p JOIN action_cohort a ON a.id=p.action_id WHERE a.run_id=c.run_id) AND NOT EXISTS (SELECT 1 FROM audit_events e WHERE e.run_id=c.run_id AND e.event_type='effort.observed' AND e.evidence->'observation'->>'source'='operator_reported' AND (e.evidence->'observation'->>'totalMinutes')::numeric > 0)) AS automated,
     (SELECT count(*)::int FROM selected WHERE status='human_follow_up') AS escalated,
     (SELECT count(*)::int FROM action_cohort WHERE business_outcome='verified') AS verified_actions,
     (SELECT avg(EXTRACT(EPOCH FROM ((SELECT max(a.updated_at) FROM action_cohort a WHERE a.run_id=c.run_id)-c.created_at))*1000) FROM verified_tickets c) AS handling_ms,
     (SELECT avg(EXTRACT(EPOCH FROM (p.decided_at-p.requested_at))*1000) FROM approvals p JOIN action_cohort a ON a.id=p.action_id WHERE p.decided_at IS NOT NULL AND p.status IN ('approved','rejected')) AS approval_ms,
-    (SELECT avg(duration_ms) FROM selected) AS provider_ms,
+    (SELECT avg(j.duration_ms) FROM ai_jobs j JOIN selected c ON c.run_id=j.run_id) AS provider_ms,
+    (SELECT count(*)::int FROM ai_jobs j JOIN selected c ON c.run_id=j.run_id) AS provider_attempts,
+    (SELECT count(*)::int FROM ai_jobs j JOIN selected c ON c.run_id=j.run_id WHERE j.status='failed') AS provider_failures,
+    (SELECT count(*)::int FROM ai_jobs j JOIN selected c ON c.run_id=j.run_id WHERE j.task='triage-invalid-output-retry') AS provider_retries,
+    (SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM ((SELECT max(a.updated_at) FROM action_cohort a WHERE a.run_id=c.run_id)-c.created_at))*1000) FROM verified_tickets c) AS handling_median_ms,
+    (SELECT percentile_cont(0.95) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM ((SELECT max(a.updated_at) FROM action_cohort a WHERE a.run_id=c.run_id)-c.created_at))*1000) FROM verified_tickets c) AS handling_p95_ms,
+    (SELECT max(EXTRACT(EPOCH FROM (${cutoff}::timestamptz-created_at))*1000) FROM selected WHERE status <> 'resolved') AS oldest_unresolved_ms,
     (SELECT count(*)::int FROM action_cohort a WHERE EXISTS (SELECT 1 FROM action_attempts x WHERE x.action_id=a.id)) AS attempted,
     (SELECT count(*)::int FROM action_cohort WHERE business_outcome='failed') AS failed,
     (SELECT count(*)::int FROM action_cohort a WHERE (SELECT count(*) FROM action_attempts x WHERE x.action_id=a.id)>1) AS retried,
     (SELECT count(*)::int FROM action_cohort WHERE business_outcome='unknown') AS unknown,
     (SELECT count(DISTINCT e.run_id)::int FROM audit_events e JOIN selected c ON c.run_id=e.run_id WHERE e.event_type='verification.unknown') AS ever_unknown,
     (SELECT count(*)::int FROM action_cohort a WHERE business_outcome='verified' AND (EXISTS (SELECT 1 FROM action_attempts x WHERE x.action_id=a.id AND x.result IN ('failed_before_commit','committed_response_lost')) OR EXISTS (SELECT 1 FROM audit_events e WHERE e.run_id=a.run_id AND e.event_type='verification.unknown'))) AS recovered,
+    (SELECT count(*)::int FROM action_cohort a WHERE a.business_outcome IN ('failed','unknown') OR EXISTS (SELECT 1 FROM action_attempts x WHERE x.action_id=a.id AND x.result IN ('failed_before_commit','committed_response_lost')) OR EXISTS (SELECT 1 FROM audit_events e WHERE e.run_id=a.run_id AND e.event_type='verification.unknown')) AS recovery_needed,
     (SELECT count(*)::int FROM audit_events e JOIN selected c ON c.run_id=e.run_id WHERE e.event_type='duplicate.event_suppressed') +
     (SELECT count(*)::int FROM action_attempts x JOIN action_cohort a ON a.id=x.action_id WHERE x.result='idempotent_replay') AS duplicates`);
   const r = result.rows[0]!;
@@ -201,6 +210,7 @@ export async function outcomeMetrics(
   const count = (key: string) => number(key) ?? 0;
   const rate = (key: string, denominator: string) =>
     count(denominator) ? count(key) / count(denominator) : null;
+  const humanEffort = await effortMetrics(db, mode, cutoff, syntheticBaseline);
   return {
     mode,
     cohort: {
@@ -217,11 +227,24 @@ export async function outcomeMetrics(
     escalatedTickets: count('escalated'),
     verifiedActions: count('verified_actions'),
     meanHandlingMs: number('handling_ms'),
+    handling: {
+      samples: count('resolved'),
+      medianMs: number('handling_median_ms'),
+      p95Ms: number('handling_p95_ms'),
+      oldestUnresolvedMs: number('oldest_unresolved_ms'),
+    },
     meanApprovalElapsedMs: number('approval_ms'),
     meanProviderLatencyMs: number('provider_ms'),
-    activeReviewMinutes: null,
-    humanMinutesPerTicket: null,
-    estimatedHumanMinutesSaved: null,
+    providerAttempts: {
+      total: count('provider_attempts'),
+      failed: count('provider_failures'),
+      retries: count('provider_retries'),
+    },
+    humanEffort,
+    activeReviewMinutes: humanEffort.observed.recordedReviewMinutes,
+    humanMinutesPerTicket: humanEffort.observed.completeCohortMinutesPerTicket,
+    estimatedHumanMinutesSaved:
+      humanEffort.observed.savings.measured.minutesPerMatchedResolvedTicket,
     modelCost: null,
     costPerResolvedTicket: null,
     reliability: {
@@ -232,7 +255,10 @@ export async function outcomeMetrics(
       retryRate: rate('retried', 'attempted'),
       everUnknown: count('ever_unknown'),
       currentUnknown: count('unknown'),
+      unknownOutcomeRate: rate('unknown', 'attempted'),
       recoveredActions: count('recovered'),
+      recoveryRate: rate('recovered', 'recovery_needed'),
+      actionsNeedingRecovery: count('recovery_needed'),
       duplicatePreventionEvents: count('duplicates'),
     },
   };

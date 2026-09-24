@@ -12,8 +12,9 @@ import { FixtureProvider } from './providers.js';
 import type { AIProvider } from './providers.js';
 import { approveWaitExercise, completeWait, createWaitExercise, registerWait, resumeWait } from './waits.js';
 import { approvalQueue, outcomeMetrics, publicDashboardPaths, registerDashboard, runEvidence, ticketDetail, ticketQueue } from './dashboard.js';
+import { effortSchema, recordEffort } from './effort.js';
 
-export function buildApp({ db, token, n8nToken, provider = new FixtureProvider(), now = () => new Date() }: { db: Database; token: string; n8nToken?: string; provider?: AIProvider; now?: () => Date }) {
+export function buildApp({ db, token, n8nToken, n8nOrigin, provider = new FixtureProvider(), now = () => new Date() }: { db: Database; token: string; n8nToken?: string; n8nOrigin?: string; provider?: AIProvider; now?: () => Date }) {
   if (token.length < 32) throw new Error('LAB_OPERATOR_TOKEN must contain at least 32 characters.');
   const app = Fastify({ bodyLimit: 16 * 1024, ajv: { customOptions: { removeAdditional: false, coerceTypes: false } } });
   const digest = (value: string) => createHash('sha256').update(value).digest();
@@ -30,6 +31,9 @@ export function buildApp({ db, token, n8nToken, provider = new FixtureProvider()
     }
   });
   app.setErrorHandler((error, _request, reply) => {
+    if (error instanceof Error && ['attempt_limit', 'current_approval_required', 'proposal_changed', 'idempotency_conflict', 'refund_revalidation_failed', 'action_not_executable'].includes(error.message)) return reply.code(409).send({ error: error.message });
+    if (error instanceof Error && ['wait_expired', 'wait_not_ready', 'approval_required', 'resume_url_conflict', 'resume_retry_exhausted', 'resume_callback_failed', 'observation_conflict'].includes(error.message)) return reply.code(409).send({ error: error.message });
+    if (error instanceof Error && error.message === 'invalid_resume_url') return reply.code(400).send({ error: error.message });
     const code = error instanceof Error && 'statusCode' in error ? error.statusCode : undefined;
     const status = typeof code === 'number' && code >= 400 && code < 500 ? code : 500;
     reply.code(status).send({ error: status === 500 ? 'internal_error' : 'invalid_request' });
@@ -48,6 +52,11 @@ export function buildApp({ db, token, n8nToken, provider = new FixtureProvider()
     return reply.code(201).send(await createTicket(db, input.data, now(), provider.mode));
   });
   app.get('/api/v1/tickets', async () => ticketQueue(db));
+  app.post<{ Params: { id: string } }>('/api/v1/tickets/:id/effort', async (request, reply) => {
+    const input = effortSchema.safeParse(request.body);
+    if (!z.uuid().safeParse(request.params.id).success || !input.success) return reply.code(400).send({ error: 'invalid_request' });
+    return await recordEffort(db, request.params.id, input.data, now()) ?? reply.code(404).send({ error: 'not_found' });
+  });
   app.get<{ Params: { id: string } }>('/api/v1/tickets/:id', async (request, reply) => {
     if (!z.uuid().safeParse(request.params.id).success) return reply.code(400).send({ error: 'invalid_request' });
     return await ticketDetail(db, request.params.id) ?? reply.code(404).send({ error: 'not_found' });
@@ -121,7 +130,7 @@ export function buildApp({ db, token, n8nToken, provider = new FixtureProvider()
     if (!z.uuid().safeParse(request.params.id).success) return reply.code(400).send({ error: 'invalid_request' });
     const input = z.strictObject({ resumeUrl: z.url() }).safeParse(request.body);
     if (!input.success) return reply.code(400).send({ error: 'invalid_request' });
-    return await registerWait(db, request.params.id, input.data.resumeUrl, now()) ?? reply.code(404).send({ error: 'not_found' });
+    return await registerWait(db, request.params.id, input.data.resumeUrl, now(), n8nOrigin) ?? reply.code(404).send({ error: 'not_found' });
   });
   app.post<{ Params: { id: string } }>('/automation/v1/waits/:id/complete', async (request, reply) => {
     if (!z.uuid().safeParse(request.params.id).success) return reply.code(400).send({ error: 'invalid_request' });
