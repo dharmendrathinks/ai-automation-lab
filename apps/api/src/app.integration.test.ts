@@ -68,6 +68,32 @@ afterAll(async () => {
 afterEach(() => vi.unstubAllGlobals());
 
 const clock = new Date('2026-09-13T00:00:00Z');
+test('refund without eligible duplicate evidence escalates instead of stranding an open ticket', async () => {
+  const created = (
+    await post({
+      customerRef: 'CUSTOMER-002',
+      message: 'I was charged twice this month.',
+    })
+  ).json();
+  await classifyRun(db, created.runId, clock, new FixtureProvider());
+  expect(
+    (await evaluateTriagePolicy(db, created.runId, clock))?.policy,
+  ).toMatchObject({
+    route: 'human_follow_up',
+    escalationReason: 'refund_eligibility',
+  });
+  expect(
+    (
+      await pool.query('SELECT status FROM tickets WHERE id=$1', [
+        created.ticketId,
+      ])
+    ).rows[0].status,
+  ).toBe('human_follow_up');
+  expect(
+    (await pool.query('SELECT count(*)::int AS n FROM proposed_actions'))
+      .rows[0].n,
+  ).toBe(0);
+});
 test.each([false, true])(
   'invalid provider output retries once, durable replay never repeats inference (recover=%s)',
   async (recover) => {

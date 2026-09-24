@@ -53,27 +53,23 @@ export async function claimEvent(db: Database, eventId: string, now: Date) {
             isNull(automationRuns.claimedAt),
           ),
         );
-      await tx
-        .insert(auditEvents)
-        .values({
-          id: randomUUID(),
-          runId: event.runId,
-          eventType: 'workflow.claimed',
-          actor: 'n8n:triage-decision-v1',
-          evidence: { eventId, workflowRevision: 'triage-decision-v1' },
-          createdAt: now,
-        });
+      await tx.insert(auditEvents).values({
+        id: randomUUID(),
+        runId: event.runId,
+        eventType: 'workflow.claimed',
+        actor: 'n8n:triage-decision-v1',
+        evidence: { eventId, workflowRevision: 'triage-decision-v1' },
+        createdAt: now,
+      });
     } else {
-      await tx
-        .insert(auditEvents)
-        .values({
-          id: randomUUID(),
-          runId: event.runId,
-          eventType: 'duplicate.event_suppressed',
-          actor: 'backend:event-claim',
-          evidence: { eventId },
-          createdAt: now,
-        });
+      await tx.insert(auditEvents).values({
+        id: randomUUID(),
+        runId: event.runId,
+        eventType: 'duplicate.event_suppressed',
+        actor: 'backend:event-claim',
+        evidence: { eventId },
+        createdAt: now,
+      });
     }
     return { eventId, runId: event.runId, duplicate: inserted.length === 0 };
   });
@@ -134,42 +130,38 @@ export async function classifyRun(
         });
         const parsed = triageDecisionSchema.safeParse(result.decision);
         if (!parsed.success) throw new Error('invalid_output');
-        await tx
-          .insert(aiJobs)
-          .values({
-            id: randomUUID(),
-            runId,
-            task,
-            provider: result.provider,
-            model: result.model,
-            status: 'completed',
-            result: { decision: parsed.data, usage: result.usage },
-            durationMs: result.durationMs,
-            createdAt: now,
-            completedAt: now,
-          });
+        await tx.insert(aiJobs).values({
+          id: randomUUID(),
+          runId,
+          task,
+          provider: result.provider,
+          model: result.model,
+          status: 'completed',
+          result: { decision: parsed.data, usage: result.usage },
+          durationMs: result.durationMs,
+          createdAt: now,
+          completedAt: now,
+        });
         await tx
           .update(automationRuns)
           .set({ decision: parsed.data, mode: provider.mode })
           .where(eq(automationRuns.id, runId));
-        await tx
-          .insert(auditEvents)
-          .values({
-            id: randomUUID(),
-            runId,
-            eventType: 'triage.decision_recorded',
-            actor: provider.provider,
-            evidence: {
-              attempt,
-              provider: result.provider,
-              model: result.model,
-              durationMs: result.durationMs,
-              usage: result.usage,
-              category: parsed.data.category,
-              intent: parsed.data.intent,
-            },
-            createdAt: now,
-          });
+        await tx.insert(auditEvents).values({
+          id: randomUUID(),
+          runId,
+          eventType: 'triage.decision_recorded',
+          actor: provider.provider,
+          evidence: {
+            attempt,
+            provider: result.provider,
+            model: result.model,
+            durationMs: result.durationMs,
+            usage: result.usage,
+            category: parsed.data.category,
+            intent: parsed.data.intent,
+          },
+          createdAt: now,
+        });
         return { runId, decision: parsed.data, reused: false };
       } catch (error) {
         const code =
@@ -191,36 +183,32 @@ export async function classifyRun(
             ? error.message
             : 'provider_unavailable';
         const durationMs = Math.max(0, Math.round(performance.now() - started));
-        await tx
-          .insert(aiJobs)
-          .values({
-            id: randomUUID(),
-            runId,
-            task,
+        await tx.insert(aiJobs).values({
+          id: randomUUID(),
+          runId,
+          task,
+          provider: provider.provider,
+          model: provider.model,
+          status: 'failed',
+          errorCode: code,
+          durationMs,
+          createdAt: now,
+          completedAt: now,
+        });
+        await tx.insert(auditEvents).values({
+          id: randomUUID(),
+          runId,
+          eventType: 'triage.provider_failed',
+          actor: provider.provider,
+          evidence: {
+            attempt,
             provider: provider.provider,
             model: provider.model,
-            status: 'failed',
-            errorCode: code,
             durationMs,
-            createdAt: now,
-            completedAt: now,
-          });
-        await tx
-          .insert(auditEvents)
-          .values({
-            id: randomUUID(),
-            runId,
-            eventType: 'triage.provider_failed',
-            actor: provider.provider,
-            evidence: {
-              attempt,
-              provider: provider.provider,
-              model: provider.model,
-              durationMs,
-              errorCode: code,
-            },
-            createdAt: now,
-          });
+            errorCode: code,
+          },
+          createdAt: now,
+        });
         if (code === 'invalid_output' && attempt === 1) continue;
         // This is a backend safety decision, never a successful model prediction.
         const decision = triageDecisionSchema.parse({
@@ -240,16 +228,14 @@ export async function classifyRun(
           .update(automationRuns)
           .set({ decision, mode: provider.mode })
           .where(eq(automationRuns.id, runId));
-        await tx
-          .insert(auditEvents)
-          .values({
-            id: randomUUID(),
-            runId,
-            eventType: 'triage.safety_escalation',
-            actor: 'backend:provider-boundary',
-            evidence: { errorCode: code, attempt, modelPrediction: false },
-            createdAt: now,
-          });
+        await tx.insert(auditEvents).values({
+          id: randomUUID(),
+          runId,
+          eventType: 'triage.safety_escalation',
+          actor: 'backend:provider-boundary',
+          evidence: { errorCode: code, attempt, modelPrediction: false },
+          createdAt: now,
+        });
         return { runId, decision, reused: false };
       }
     }
@@ -326,16 +312,14 @@ export async function evaluateTriagePolicy(
       .update(workflowExecutions)
       .set({ technicalStatus: 'completed', completedAt: now })
       .where(eq(workflowExecutions.runId, runId));
-    await tx
-      .insert(auditEvents)
-      .values({
-        id: randomUUID(),
-        runId,
-        eventType: 'triage.policy_recorded',
-        actor: 'backend:triage-policy-v1',
-        evidence: policy,
-        createdAt: now,
-      });
+    await tx.insert(auditEvents).values({
+      id: randomUUID(),
+      runId,
+      eventType: 'triage.policy_recorded',
+      actor: 'backend:triage-policy-v1',
+      evidence: policy,
+      createdAt: now,
+    });
     if (route === 'automatic_support') {
       const actionId = randomUUID();
       const eventId = randomUUID();
@@ -358,33 +342,29 @@ export async function evaluateTriagePolicy(
         .onConflictDoNothing()
         .returning({ id: proposedActions.id });
       if (inserted.length) {
-        await tx
-          .insert(outboxEvents)
-          .values({
-            id: eventId,
-            runId,
+        await tx.insert(outboxEvents).values({
+          id: eventId,
+          runId,
+          eventType: 'action.ready',
+          payload: {
+            eventId,
             eventType: 'action.ready',
-            payload: {
-              eventId,
-              eventType: 'action.ready',
-              schemaVersion: 1,
-              occurredAt: now.toISOString(),
-              runId,
-              actionId,
-            },
-            status: 'pending',
-            createdAt: now,
-          });
-        await tx
-          .insert(auditEvents)
-          .values({
-            id: randomUUID(),
+            schemaVersion: 1,
+            occurredAt: now.toISOString(),
             runId,
-            eventType: 'action.proposed',
-            actor: 'backend:triage-policy-v1',
-            evidence: { actionId, kind: 'support_response', status: 'ready' },
-            createdAt: now,
-          });
+            actionId,
+          },
+          status: 'pending',
+          createdAt: now,
+        });
+        await tx.insert(auditEvents).values({
+          id: randomUUID(),
+          runId,
+          eventType: 'action.proposed',
+          actor: 'backend:triage-policy-v1',
+          evidence: { actionId, kind: 'support_response', status: 'ready' },
+          createdAt: now,
+        });
       }
     }
     if (route === 'approval_required') {
@@ -416,8 +396,9 @@ export async function evaluateTriagePolicy(
         )
         .at(-1);
       const withinAge = eligible
-        ? now.getTime() - eligible.createdAt.getTime() <=
-          30 * 24 * 60 * 60 * 1000
+        ? eligible.createdAt <= now &&
+          now.getTime() - eligible.createdAt.getTime() <=
+            30 * 24 * 60 * 60 * 1000
         : false;
       if (
         ticket?.customerId &&
@@ -454,33 +435,55 @@ export async function evaluateTriagePolicy(
           .onConflictDoNothing()
           .returning({ id: proposedActions.id });
         if (inserted.length) {
-          await tx
-            .insert(approvals)
-            .values({
-              id: randomUUID(),
+          await tx.insert(approvals).values({
+            id: randomUUID(),
+            actionId,
+            proposalHash,
+            status: 'pending',
+            requestedAt: now,
+            expiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000),
+          });
+          await tx.insert(auditEvents).values({
+            id: randomUUID(),
+            runId,
+            eventType: 'refund.proposed',
+            actor: 'backend:refund-policy-v1',
+            evidence: {
               actionId,
               proposalHash,
-              status: 'pending',
-              requestedAt: now,
-              expiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000),
-            });
-          await tx
-            .insert(auditEvents)
-            .values({
-              id: randomUUID(),
-              runId,
-              eventType: 'refund.proposed',
-              actor: 'backend:refund-policy-v1',
-              evidence: {
-                actionId,
-                proposalHash,
-                paymentId: eligible.id,
-                amountMinor: eligible.amountMinor,
-                currency: eligible.currency,
-              },
-              createdAt: now,
-            });
+              paymentId: eligible.id,
+              amountMinor: eligible.amountMinor,
+              currency: eligible.currency,
+            },
+            createdAt: now,
+          });
         }
+      } else {
+        policy.route = 'human_follow_up';
+        policy.allowed = false;
+        policy.escalationReason = 'refund_eligibility';
+        await tx
+          .update(automationRuns)
+          .set({
+            policyResult: policy,
+            outcome: policy.route,
+            escalationReason: policy.escalationReason,
+          })
+          .where(eq(automationRuns.id, runId));
+        await tx
+          .update(tickets)
+          .set({ status: 'human_follow_up' })
+          .where(eq(tickets.id, run.ticketId));
+        await tx
+          .insert(auditEvents)
+          .values({
+            id: randomUUID(),
+            runId,
+            eventType: 'refund.policy_escalated',
+            actor: 'backend:refund-policy-v1',
+            evidence: policy,
+            createdAt: now,
+          });
       }
     }
     return { runId, policy, reused: false };
