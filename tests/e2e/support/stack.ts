@@ -53,6 +53,8 @@ export function composeSpec(instance: string) {
         platform: 'linux/arm64',
         depends_on: { postgres: { condition: 'service_healthy' } },
         environment: {
+          // Keep synthetic test processes bounded when sharing a Docker VM with the lab.
+          NODE_OPTIONS: '--max-old-space-size=512',
           DB_TYPE: 'postgresdb',
           DB_POSTGRESDB_HOST: 'postgres',
           DB_POSTGRESDB_PORT: '5432',
@@ -104,6 +106,7 @@ export function composeSpec(instance: string) {
           RELAYDESK_E2E_INSTANCE: instance,
           DATABASE_URL: TEST_DATABASE_URL,
           LAB_AI_MODE: 'fixture',
+          NODE_OPTIONS: '--max-old-space-size=256',
           CI: 'true',
         },
         // Deliberately NOT a whole-repository/home mount: .env and .local credentials stay outside.

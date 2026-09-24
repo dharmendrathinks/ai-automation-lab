@@ -35,6 +35,7 @@ test('API container cannot inherit model settings, developer homes, credentials 
     'CI',
     'DATABASE_URL',
     'LAB_AI_MODE',
+    'NODE_OPTIONS',
     'RELAYDESK_E2E',
     'RELAYDESK_E2E_INSTANCE',
   ]);
@@ -45,4 +46,10 @@ test('API container cannot inherit model settings, developer homes, credentials 
     expect(mount.target).not.toBe('/workspace');
     expect(mount.target).not.toContain('/node_modules');
   }
+});
+
+test('disposable Node heaps are bounded independently of developer runtime options', () => {
+  const spec = composeSpec('relaydesk-e2e-123-abcd1234');
+  expect(spec.services.n8n.environment.NODE_OPTIONS).toBe('--max-old-space-size=512');
+  expect(spec.services.api.environment.NODE_OPTIONS).toBe('--max-old-space-size=256');
 });
